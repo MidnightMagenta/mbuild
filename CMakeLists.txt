@@ -18,8 +18,11 @@ find_package(Boost REQUIRED)
 
 add_executable(mbuild
     src/main.cc
+    src/build_graph.cc
 
-    include/graph.h
+    include/build_graph.hpp
+    include/emit.hpp
+    include/dbg_emitter.hpp
 )
 
 target_include_directories(mbuild PRIVATE
