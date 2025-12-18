@@ -1,10 +1,36 @@
+#include <graph.h>
 #include <iostream>
-#include <mbuild.h>
+
+int run(int argc, char **argv) {
+    mb::DepGraph testGraph;
+
+    testGraph.artifact("foo.o");
+    testGraph.artifact("foo.c");
+    testGraph.artifact("bar.c");
+    testGraph.artifact("baz.o");
+    testGraph.artifact("baz.c");
+    testGraph.artifact("someotherfile.c");
+    testGraph.artifact("fun.o");
+    testGraph.artifact("fun.c");
+    testGraph.artifact("lib.a");
+    testGraph.artifact("out.elf");
+
+    testGraph.depends("ar", "lib.a", {"fun.o", "baz.o"});
+    testGraph.depends("cc", "fun.o", {"fun.c"});
+    testGraph.depends("cc", "baz.o", {"baz.c", "someotherfile.c"});
+    testGraph.depends("ld", "out.elf", {"foo.o", "lib.a"});
+    testGraph.depends("cc", "foo.o", {"foo.c", "bar.c"});
+
+    testGraph.validate();
+
+    testGraph.print();
+
+    return 0;
+}
 
 int main(int argc, char **argv) {
     try {
-        mb::MbuildApp app;
-        return app.run(argc, argv);
+        return run(argc, argv);
     } catch (const std::runtime_error &e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return 1;
