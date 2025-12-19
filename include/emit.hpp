@@ -10,9 +10,11 @@ public:
     Emitter() {}
     virtual ~Emitter() {}
 
-    virtual void begin()                                                                                   = 0;
-    virtual void edge(const std::string &rule, const std::string &out, const std::vector<std::string> &in) = 0;
-    virtual void end()                                                                                     = 0;
+    virtual void begin()                                  = 0;
+    virtual void edge(const std::string              &rule,
+                      const std::vector<std::string> &out,
+                      const std::vector<std::string> &in) = 0;
+    virtual void end()                                    = 0;
 
 private:
 };
