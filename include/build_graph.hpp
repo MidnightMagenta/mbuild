@@ -5,14 +5,13 @@
 #include <boost/graph/graph_traits.hpp>
 #include <emit.hpp>
 #include <filesystem>
-#include <optional>
 #include <string>
 #include <unordered_map>
+#include <variant>
 #include <vector>
 
 namespace mb {
 namespace fs = std::filesystem;
-namespace bs = boost;
 
 class BuildGraph {
 public:
@@ -23,13 +22,25 @@ public:
         std::string description;
     };
 
-    struct Node {
-        fs::path                   m_path;
-        std::optional<std::string> m_rule;
+    struct Artifact {
+        fs::path path;
+    };
+    struct Action {
+        std::string rule;
     };
 
-    using Graph  = bs::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, Node>;
-    using Vertex = bs::graph_traits<Graph>::vertex_descriptor;
+    struct Node {
+        enum class Type {
+            Artifact,
+            Action,
+        } type;
+
+        std::variant<Artifact, Action> data;
+    };
+
+    using Graph      = boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, Node>;
+    using Vertex     = boost::graph_traits<Graph>::vertex_descriptor;
+    using DegreeSize = boost::graph_traits<Graph>::degree_size_type;
 
 public:
     BuildGraph() {
@@ -49,10 +60,12 @@ public:
 
     void set_default_rules();
 
-    Vertex artifact(const fs::path &path);
-    void   depends(const std::string &rule, const fs::path &depn, const std::vector<fs::path> &deps);
-    void   depends(const std::string &rule, const Vertex depn, const std::vector<Vertex> &deps);
-    void   emit(Emitter &e);
+    fs::path artifact(const fs::path &path);
+    void     depends(const std::string &rule, const fs::path &dependent, const fs::path &dependency);
+    void     depends_a(const std::string &rule, const fs::path &dependent, const std::vector<fs::path> &dependencies);
+    void     depends(const std::string &rule, const Vertex dependent, const Vertex dependency);
+    void     depends_a(const std::string &rule, const Vertex dependent, const std::vector<Vertex> &dependencies);
+    void     emit(Emitter &e);
 
 private:
     inline fs::path normalize(const std::filesystem::path &p) {

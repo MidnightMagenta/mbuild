@@ -16,11 +16,11 @@ int run(int argc, char **argv) {
     testGraph.artifact("lib.a");
     testGraph.artifact("out.elf");
 
-    testGraph.depends("ar", "lib.a", {"fun/dir/../fun.o", "baz.o"});
-    testGraph.depends("cc", "fun/dir/../fun.o", {"fun.c"});
-    testGraph.depends("cc", "baz.o", {"baz.c", "someotherfile.c"});
-    testGraph.depends("ld", "out.elf", {"foo.o", "lib.a"});
-    testGraph.depends("cc", "foo.o", {"foo.c", "bar.c"});
+    testGraph.depends_a("ar", "lib.a", {"fun/dir/../fun.o", "baz.o"});
+    testGraph.depends_a("cc", "fun/dir/../fun.o", {"fun.c"});
+    testGraph.depends_a("cc", "baz.o", {"baz.c", "someotherfile.c"});
+    testGraph.depends_a("ld", "out.elf", {"foo.o", "lib.a"});
+    testGraph.depends_a("cc", "foo.o", {"foo.c", "bar.c"});
 
     mb::DebugEmit emit;
     testGraph.emit(emit);

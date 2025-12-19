@@ -19,6 +19,7 @@ find_package(Boost REQUIRED)
 add_executable(mbuild
     src/main.cc
     src/build_graph.cc
+    src/dbg_emitter.cc
 
     include/build_graph.hpp
     include/emit.hpp
