@@ -24,6 +24,7 @@ add_executable(mbuild
     include/build_graph.hpp
     include/emit.hpp
     include/dbg_emitter.hpp
+    include/terminal.hpp
 )
 
 target_include_directories(mbuild PRIVATE

@@ -1,14 +1,15 @@
 #include <dbg_emitter.hpp>
-#include <iostream>
+#include <terminal.hpp>
 
-namespace term {
-constexpr const char *reset = "\033[0m";
-constexpr const char *red   = "\033[31m";
-constexpr const char *green = "\033[32m";
+void mb::DebugEmit::rule(const mb::Rule &rule) {
+    std::cout << "Rule: " << rule.name << "\n";
+    std::cout << "\tCommand: " << rule.command << "\n";
+    std::cout << "\tDescription: " << rule.description << "\n";
+    std::cout << "\tVars: {\n";
+    for (const auto &[k, v] : rule.vars) { std::cout << "\t\t" << k << " = " << v << ",\n"; }
+    std::cout << "\t}\n";
+}
 
-constexpr const char *bold = "\033[1m";
-}// namespace term
-//
 void mb::DebugEmit::end() {
     size_t max_edge_width = 0;
     for (const auto &e : m_edges) {

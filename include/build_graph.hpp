@@ -15,13 +15,6 @@ namespace fs = std::filesystem;
 
 class BuildGraph {
 public:
-    struct Rule {
-        std::string name;
-        std::string command;
-        std::string depFile;
-        std::string description;
-    };
-
     struct Artifact {
         fs::path path;
     };
@@ -41,6 +34,8 @@ public:
     using Graph      = boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, Node>;
     using Vertex     = boost::graph_traits<Graph>::vertex_descriptor;
     using DegreeSize = boost::graph_traits<Graph>::degree_size_type;
+
+    using VarStorage = std::unordered_map<std::string, std::string>;
 
 public:
     BuildGraph() {
@@ -65,18 +60,31 @@ public:
     void     depends_a(const std::string &rule, const fs::path &dependent, const std::vector<fs::path> &dependencies);
     void     depends(const std::string &rule, const Vertex dependent, const Vertex dependency);
     void     depends_a(const std::string &rule, const Vertex dependent, const std::vector<Vertex> &dependencies);
-    void     emit(Emitter &e);
+
+    void        define_rule(Rule rule);
+    const Rule &get_rule(const std::string &name) const;
+
+    void                       set_var(const std::string &name, const std::string &value);
+    void                       append_var(const std::string &name, const std::string &value);
+    std::optional<std::string> get_var(const std::string &name) const;
+
+    void emit(Emitter &e);
 
 private:
     inline fs::path normalize(const std::filesystem::path &p) {
         return (p.is_absolute() ? p.lexically_relative(m_root) : p).lexically_normal();
     }
 
+    void validate();
+
 private:
     fs::path                             m_root;
     Graph                                m_graph;
     std::unordered_map<fs::path, Vertex> m_vertexIDMap;
-    std::vector<Rule>                    m_rules;
+
+    std::unordered_map<std::string, Rule>        m_rules;
+    std::unordered_map<std::string, std::string> m_ruleFileAssociations;
+    VarStorage                                   m_vars;
 };
 }// namespace mb
 
