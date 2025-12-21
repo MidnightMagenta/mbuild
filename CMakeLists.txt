@@ -20,11 +20,14 @@ add_executable(mbuild
     src/main.cc
     src/build_graph.cc
     src/dbg_emitter.cc
+    src/api.cc
 
     include/build_graph.hpp
     include/emit.hpp
     include/dbg_emitter.hpp
     include/terminal.hpp
+    include/types.hpp
+    include/api.hpp
 )
 
 target_include_directories(mbuild PRIVATE

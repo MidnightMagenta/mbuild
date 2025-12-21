@@ -1,8 +1,8 @@
 #ifndef MBUILD_EMIT_H
 #define MBUILD_EMIT_H
 
-#include <rule.hpp>
 #include <string>
+#include <types.hpp>
 #include <vector>
 
 namespace mb {

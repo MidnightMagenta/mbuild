@@ -6,6 +6,7 @@
 #include <emit.hpp>
 #include <filesystem>
 #include <string>
+#include <types.hpp>
 #include <unordered_map>
 #include <variant>
 #include <vector>
@@ -53,16 +54,25 @@ public:
         return m_root;
     }
 
-    void set_default_rules();
+    Vertex file(const fs::path &path) {
+        return artifact(path);
+    }
 
-    fs::path artifact(const fs::path &path);
-    void     depends(const std::string &rule, const fs::path &dependent, const fs::path &dependency);
-    void     depends_a(const std::string &rule, const fs::path &dependent, const std::vector<fs::path> &dependencies);
-    void     depends(const std::string &rule, const Vertex dependent, const Vertex dependency);
-    void     depends_a(const std::string &rule, const Vertex dependent, const std::vector<Vertex> &dependencies);
+    void build(const fs::path &out, const std::string &rule, const std::vector<fs::path> &ins) {
+        depends_a(rule, out, ins);
+    }
+
+    void build(Vertex out, const std::string &rule, std::vector<Vertex> &ins) {
+        depends_a(rule, out, ins);
+    }
 
     void        define_rule(Rule rule);
     const Rule &get_rule(const std::string &name) const;
+    void        set_rule_var(const std::string &rule, const std::string &name, const std::string &value);
+    void        append_rule_var(const std::string &rule, const std::string &name, const std::string &value);
+    std::optional<std::string> get_rule_var(const std::string &rule, const std::string &name);
+    void                       set_rule_association(const std::string &rule, const std::vector<std::string> &exts);
+    std::optional<std::string> get_rule_for_file(const std::string &ext);
 
     void                       set_var(const std::string &name, const std::string &value);
     void                       append_var(const std::string &name, const std::string &value);
@@ -71,6 +81,14 @@ public:
     void emit(Emitter &e);
 
 private:
+    Vertex artifact(const fs::path &path);
+    void   depends(const std::string &rule, const fs::path &dependent, const fs::path &dependency);
+    void   depends_a(const std::string &rule, const fs::path &dependent, const std::vector<fs::path> &dependencies);
+    void   depends(const std::string &rule, const Vertex dependent, const Vertex dependency);
+    void   depends_a(const std::string &rule, const Vertex dependent, const std::vector<Vertex> &dependencies);
+
+    Rule &require_rule(const std::string &rule);
+
     inline fs::path normalize(const std::filesystem::path &p) {
         return (p.is_absolute() ? p.lexically_relative(m_root) : p).lexically_normal();
     }
