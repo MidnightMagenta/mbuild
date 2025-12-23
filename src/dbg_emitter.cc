@@ -26,7 +26,7 @@ void mb::DebugEmit::end() {
         }
 
         std::cout << std::string(max_edge_width - w, ' ');
-        std::cout << term::red << term::bold << "-[" << e.rule << "]-> " << term::reset;
+        std::cout << term::red << term::bold << "<-[" << e.rule << "]- " << term::reset;
 
         for (const auto &i : e.in) { std::cout << i << " "; }
         std::cout << "\n";

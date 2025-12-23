@@ -5,19 +5,15 @@
 #include <terminal.hpp>
 
 int run(int argc, char **argv) {
-
-    mb::api::g_buildGraph.set_rule_association("cc", {".c"});
-    mb::api::g_buildGraph.set_rule_association("cxx", {".cc", ".cpp", ".cxx"});
-
-    mb::api::source("foo.c");
-    mb::api::source("bar.c");
-    mb::api::source("baz.cpp");
-
-    mb::api::g_buildGraph.file("foo.elf");
-    mb::api::g_buildGraph.build("foo.elf", "ld", {"foo.o", "bar.o", "baz.o"});
+    mb::api::g_buildGraph.build("cc").input("foo.c").output("foo.o", true);
+    mb::api::g_buildGraph.build("cc").input("bar.c").output("bar.o", true);
+    mb::api::g_buildGraph.build("cc").input("baz.c").output("baz.o", true);
+    mb::api::g_buildGraph.build("ld").inputs({"foo.o", "bar.o", "baz.o"}).output("foo.elf", true);
 
     mb::DebugEmit emit;
+    emit.begin();
     mb::api::g_buildGraph.emit(emit);
+    emit.end();
 
     return 0;
 }
