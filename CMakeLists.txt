@@ -13,16 +13,19 @@ endif()
 
 project(${PROJECT_NAME})
 
-find_package(Lua REQUIRED)
 find_package(Boost REQUIRED)
+
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LUA REQUIRED lua54)
 
 add_executable(mbuild
     src/main.cc
     src/build_graph.cc
     src/dbg_emitter.cc
     src/api.cc
-    src/build.cc
-    src/configure.cc
+    src/build_context.cc
+    src/evaluate.cc
 
     include/build_graph.hpp
     include/emit.hpp
@@ -32,16 +35,17 @@ add_executable(mbuild
     include/api.hpp
     include/utils.hpp
     include/global_config.hpp
+    include/build_context.hpp
 )
 
 target_include_directories(mbuild PRIVATE
     include
-    ${Lua_INCLUDE_DIRS}
+    ${LUA_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
 )
 
 target_link_libraries(mbuild PRIVATE
-    ${Lua_LIBRARIES}
+    ${LUA_LIBRARIES}
     ${Boost_LIBRARIES}
 )
 

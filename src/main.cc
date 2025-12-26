@@ -1,52 +1,59 @@
+#include <build_context.hpp>
 #include <cassert>
-#include <cstring>
+#include <dbg_emitter.hpp>
+#include <filesystem>
+#include <getopt.h>
 #include <global_config.hpp>
 #include <iostream>
 #include <terminal.hpp>
 #include <utils.hpp>
 
-int do_help(int argc, char **argv) {
+extern void evaluate(const char *);
+
+int usage() {
     std::cout << mb::term::bold << "Usage:\n" << mb::term::reset;
     std::cout << "\t" << mb::g_toolName << " <subcommand> [flags] [args]\n";
     return 0;
 }
 
-extern int do_configure(int argc, char **argv);
-extern int do_build(int argc, char **argv);
-
-#define DECL_CMD(n) {#n, static_cast<int (*)(int, char **)>(do_##n)}
-
-struct {
-    const char *name;
-    int (*run)(int, char **);
-} constexpr g_commands[]{
-        DECL_CMD(help),
-        DECL_CMD(build),
-        DECL_CMD(configure),
-};
-
 int run(int argc, char **argv) {
-    const int    sub_argc    = argc - 1;
-    char **const sub_argv    = argv + 1;
-    const char  *help_argv[] = {"help", nullptr};
+    int                   opt;
+    std::filesystem::path rootDir = std::filesystem::current_path();
 
-    if (argc < 2) {
-        std::cerr << "Invalid arguments\nUsage:\n";
-        do_help(1, const_cast<char **>(help_argv));
-        return 1;
+    optind = 1;
+
+    static struct option opts[] = {
+            {"help", no_argument, nullptr, 'h'},
+            {"change-dir", required_argument, nullptr, 'C'},
+            {0, 0, 0, 0},
+    };
+
+    while ((opt = getopt_long(argc, argv, "hC:", opts, nullptr)) != -1) {
+        switch (opt) {
+            case 'h':
+                usage();
+                break;
+            case 'C': {
+                rootDir = std::filesystem::weakly_canonical(optarg);
+                if (!std::filesystem::exists(rootDir)) {
+                    throw std::runtime_error("Cannot change path to a non existant directory " + rootDir.string());
+                }
+                break;
+            }
+            case '?':
+                [[fallthrough]];
+            default:
+                usage();
+                return 1;
+        }
     }
 
-    for (const auto &cmd : g_commands) {
-        assert(cmd.name != nullptr);
-        assert(cmd.run != nullptr);
+    evaluate(rootDir.string().c_str());
+    mb::DebugEmit e;
+    mb::g_buildContext.emit(e);
+    e.end();
 
-        if (strcmp(cmd.name, sub_argv[0]) == 0) { return cmd.run(sub_argc, sub_argv); }
-    }
-
-    std::cerr << mb::term::red << "Error: " << mb::term::reset << "Invalid subcommand: " << argv[1] << "\nUsage:\n";
-    do_help(1, const_cast<char **>(help_argv));
-
-    return 1;
+    return 0;
 }
 
 int main(int argc, char **argv) {

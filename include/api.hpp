@@ -2,15 +2,13 @@
 #define MBUILD_API_H
 
 #include <build_graph.hpp>
-#include <filesystem>
+#include <lua.hpp>
 
 namespace mb::api {
-namespace fs = std::filesystem;
-
-inline mb::BuildGraph g_buildGraph;
-
-void source(const fs::path &path);
-
+namespace lua {
+    // lua signature: build(rule (string), inputs (array), outputs(array))
+    int build(lua_State *L);
+}// namespace lua
 }// namespace mb::api
 
 #endif
