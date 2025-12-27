@@ -2,6 +2,7 @@
 
 void mb::BuildContext::emit(mb::Emitter &e) {
     e.begin();
+    for (const auto &[k, v] : m_vars) { e.global_var(k, v); }
     m_rules.emit(e);
     m_graph.emit(e);
     e.end();

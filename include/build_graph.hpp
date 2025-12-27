@@ -26,7 +26,8 @@ public:
     };
 
     struct Action {
-        std::string rule;
+        std::string                                  rule;
+        std::unordered_map<std::string, std::string> vars;
     };
 
     struct Node {
@@ -60,6 +61,7 @@ public:
 
     ArtifactID file(const fs::path &p);
     ActionID   action(const std::string &rule);
+    void       action_var(ActionID a, const std::string &key, const std::string &value);
     void       consumes(ActionID a, ArtifactID in);
     void       produces(ActionID a, ArtifactID out);
 
@@ -94,22 +96,32 @@ public:
         : m_graph(g),
           m_rule(std::move(rule)) {}
 
-    ActionBuilder &inputs(std::initializer_list<fs::path> paths) {
+    inline ActionBuilder &inputs(std::initializer_list<fs::path> paths) {
         return inputs(std::span{paths.begin(), paths.size()});
     }
 
     ActionBuilder &inputs(std::span<const fs::path> ins);
     ActionBuilder &input(const fs::path &in);
 
-    ActionBuilder &output(const fs::path &p, bool finish = false) {
+    inline ActionBuilder &output(const fs::path &p, bool finish = false) {
         return outputs(std::span{&p, 1}, finish);
     }
 
-    ActionBuilder &outputs(std::initializer_list<fs::path> paths, bool finish = false) {
+    inline ActionBuilder &outputs(std::initializer_list<fs::path> paths, bool finish = false) {
         return outputs(std::span{paths.begin(), paths.size()}, finish);
     }
 
     ActionBuilder &outputs(std::span<const fs::path> out, bool finish = false);
+
+    inline ActionBuilder &set_var(const std::string &key, const std::string &value) {
+        m_vars[key] = value;
+        return *this;
+    }
+
+    inline ActionBuilder &set_vars(const std::unordered_map<std::string, std::string> &vars) {
+        for (const auto &[k, v] : vars) { set_var(k, v); }
+        return *this;
+    }
 
     void finalize();
 
@@ -118,12 +130,13 @@ public:
     }
 
 private:
-    mb::BuildGraph         &m_graph;
-    std::string             m_rule;
-    std::vector<ArtifactID> m_inputs;
-    std::vector<ArtifactID> m_outputs;
-    ActionID                m_action;
-    bool                    m_finalized = false;
+    mb::BuildGraph                              &m_graph;
+    std::string                                  m_rule;
+    std::vector<ArtifactID>                      m_inputs;
+    std::vector<ArtifactID>                      m_outputs;
+    std::unordered_map<std::string, std::string> m_vars;
+    ActionID                                     m_action;
+    bool                                         m_finalized = false;
 };
 }// namespace mb
 

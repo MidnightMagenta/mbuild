@@ -19,19 +19,21 @@ public:
 
     void rule(const BuildRules::Rule &rule) override;
 
-    void edge(const std::string              &rule,
-              const std::vector<std::string> &out,
-              const std::vector<std::string> &in) override {
-        m_edges.emplace_back(Edge{.rule = rule, .out = out, .in = in});
+    void edge(const std::string                                  &rule,
+              const std::vector<std::string>                     &out,
+              const std::vector<std::string>                     &in,
+              const std::unordered_map<std::string, std::string> &vars) override {
+        m_edges.emplace_back(Edge{.rule = rule, .out = out, .in = in, .vars = vars});
     }
 
     void end() override;
 
 private:
     struct Edge {
-        std::string              rule;
-        std::vector<std::string> out;
-        std::vector<std::string> in;
+        std::string                                  rule;
+        std::vector<std::string>                     out;
+        std::vector<std::string>                     in;
+        std::unordered_map<std::string, std::string> vars;
     };
 
 private:

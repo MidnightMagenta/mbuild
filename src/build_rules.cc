@@ -12,9 +12,9 @@ Rule &Rule::append_var(const std::string &key, const std::string &value) {
     return *this;
 }
 
-std::string Rule::get_var(const std::string &key) {
+std::optional<std::string> Rule::get_var(const std::string &key) {
     auto it = m_vars.find(key);
-    if (it == m_vars.end()) { return std::string(); }
+    if (it == m_vars.end()) { return std::nullopt; }
     return it->second;
 }
 

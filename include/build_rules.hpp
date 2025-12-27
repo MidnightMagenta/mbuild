@@ -1,6 +1,7 @@
 #ifndef MBUILD_RULE_H
 #define MBUILD_RULE_H
 
+#include <optional>
 #include <string>
 #include <unordered_map>
 
@@ -20,9 +21,9 @@ public:
             m_vars[key] = value;
             return *this;
         }
-        Rule       &append_var(const std::string &key, const std::string &value);
-        std::string get_var(const std::string &key);
-        inline void delete_var(const std::string &key) {
+        Rule                      &append_var(const std::string &key, const std::string &value);
+        std::optional<std::string> get_var(const std::string &key);
+        inline void                delete_var(const std::string &key) {
             m_vars.erase(key);
         }
     };

@@ -35,12 +35,20 @@ mb::ActionID mb::BuildGraph::action(const std::string &rule) {
     return {v};
 }
 
+void mb::BuildGraph::action_var(ActionID a, const std::string &key, const std::string &value) {
+    assert(m_graph[a.v].type == Node::Type::Action);
+    std::get<Action>(m_graph[a.v].data).vars[key] = value;
+}
+
 void mb::BuildGraph::consumes(ActionID a, ArtifactID in) {
     boost::add_edge(in.v, a.v, m_graph);
 }
 
 void mb::BuildGraph::produces(ActionID a, ArtifactID out) {
-    if (boost::in_degree(out.v, m_graph) != 0) { throw std::runtime_error("Artifact already has a producer"); }
+    if (boost::in_degree(out.v, m_graph) != 0) {
+        throw std::runtime_error("Artifact " + std::get<Artifact>(m_graph[out.v].data).path.string() +
+                                 " already has a producer");
+    }
     boost::add_edge(a.v, out.v, m_graph);
 }
 
@@ -49,7 +57,8 @@ void mb::BuildGraph::emit(Emitter &e) {
     for (auto v : boost::make_iterator_range(vertices(m_graph))) {
         if (m_graph[v].type != Node::Type::Action) { continue; }
 
-        std::string rule = std::get<Action>(m_graph[v].data).rule;
+        std::string                                  rule = std::get<Action>(m_graph[v].data).rule;
+        std::unordered_map<std::string, std::string> vars = std::get<Action>(m_graph[v].data).vars;
 
         std::vector<std::string> targets;
         for (auto t_e : boost::make_iterator_range(out_edges(v, m_graph))) {
@@ -65,7 +74,7 @@ void mb::BuildGraph::emit(Emitter &e) {
             deps.push_back(std::get<Artifact>(m_graph[artifact].data).path.string());
         }
 
-        e.edge(rule, targets, deps);
+        e.edge(rule, targets, deps, vars);
     }
 }
 
@@ -110,6 +119,7 @@ void mb::ActionBuilder::finalize() {
     m_action = m_graph.action(m_rule);
     for (auto &in : m_inputs) { m_graph.consumes(m_action, in); }
     for (auto &out : m_outputs) { m_graph.produces(m_action, out); }
+    for (const auto &[k, v] : m_vars) { m_graph.action_var(m_action, k, v); }
 
     m_finalized = true;
 }

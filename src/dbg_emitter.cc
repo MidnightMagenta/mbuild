@@ -28,5 +28,7 @@ void mb::DebugEmit::end() {
 
         for (const auto &i : e.in) { std::cout << i << " "; }
         std::cout << "\n";
+
+        for (const auto &[k, v] : e.vars) { std::cout << "\t" << k << " = " << v << "\n"; }
     }
 }

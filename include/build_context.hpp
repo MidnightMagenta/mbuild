@@ -12,14 +12,28 @@ public:
     BuildContext() {}
     ~BuildContext() {}
 
-    inline void build(const std::string              &rule,
-                      const std::vector<std::string> &ins,
-                      const std::vector<std::string>  outs) {
-        build(rule, to_paths(ins), to_paths(outs));
+    inline void build(const std::string                                  &rule,
+                      const std::vector<std::string>                     &ins,
+                      const std::vector<std::string>                     &outs,
+                      const std::unordered_map<std::string, std::string> &vars) {
+        build(rule, to_paths(ins), to_paths(outs), vars);
     }
 
-    inline void build(const std::string &rule, const std::vector<fs::path> &ins, const std::vector<fs::path> outs) {
-        m_graph.build(rule).inputs(ins).outputs(outs, true);
+    inline void build(const std::string                                  &rule,
+                      const std::vector<fs::path>                        &ins,
+                      const std::vector<fs::path>                         outs,
+                      const std::unordered_map<std::string, std::string> &vars) {
+        m_graph.build(rule).set_vars(vars).inputs(ins).outputs(outs, true);
+    }
+
+    void set_var(const std::string &key, const std::string &value) {
+        m_vars[key] = value;
+    }
+
+    std::optional<std::string> get_var(const std::string &key) {
+        auto it = m_vars.find(key);
+        if (it == m_vars.end()) { return std::nullopt; }
+        return it->second;
     }
 
     void emit(Emitter &e);
@@ -36,8 +50,9 @@ private:
     std::vector<fs::path> to_paths(const std::vector<std::string> &p);
 
 private:
-    BuildGraph m_graph;
-    BuildRules m_rules;
+    BuildGraph                                   m_graph;
+    BuildRules                                   m_rules;
+    std::unordered_map<std::string, std::string> m_vars;
 };
 
 inline BuildContext g_buildContext;

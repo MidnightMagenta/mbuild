@@ -51,7 +51,6 @@ int run(int argc, char **argv) {
     evaluate(rootDir.string().c_str());
     mb::DebugEmit e;
     mb::g_buildContext.emit(e);
-    e.end();
 
     return 0;
 }

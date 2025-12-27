@@ -1,6 +1,5 @@
 #include <api.hpp>
 #include <build_context.hpp>
-#include <iostream>
 #include <vector>
 
 // all lua_error() throwing calls may only be used in the API boundary function.
@@ -49,10 +48,28 @@ int mb::api::lua::build(lua_State *L) {
     // ---- no lua_error() throwing calls from this line forward ----
 
     try {
-        std::vector<std::string> ins  = read_str_table(L, 2);
-        std::vector<std::string> outs = read_str_table(L, 3);
-        if (sTop == 4) { std::cout << "Ignoring 'vars'. Unimplemented\n"; }
-        g_buildContext.build(rule, ins, outs);
+        std::vector<std::string>                     ins  = read_str_table(L, 2);
+        std::vector<std::string>                     outs = read_str_table(L, 3);
+        std::unordered_map<std::string, std::string> vars;
+        if (sTop == 4) {
+            lua_pushnil(L);
+            while (lua_next(L, 4)) {// 4 -> vars table
+                // current stack
+                // -2 -> key (string)
+                // -1 -> value
+
+                if (!lua_isstring(L, -2) || !lua_isstring(L, -1)) {
+                    throw std::runtime_error("rule() table indices and values must be of type `string`");
+                }
+                const char *key   = lua_tostring(L, -2);
+                const char *value = lua_tostring(L, -1);
+                auto [it, set]    = vars.try_emplace(key, value);
+                if (!set) { throw std::runtime_error("Variable `" + std::string(key) + "` was set twice"); }
+
+                lua_pop(L, 1);
+            }
+        }
+        g_buildContext.build(rule, ins, outs, vars);
     } catch (const std::runtime_error &e) { luaL_error(L, e.what()); } catch (...) {
         luaL_error(L, "Unknown error");
     }
@@ -86,9 +103,7 @@ int mb::api::lua::rule(lua_State *L) {
                 throw std::runtime_error("rule() table indices and values must be of type `string`");
             }
             const char *key = lua_tostring(L, -2);
-            if (!r->get_var(key).empty()) {
-                throw std::runtime_error("Rule property `" + std::string(key) + "` was set twice");
-            }
+            if (r->get_var(key)) { throw std::runtime_error("Rule property `" + std::string(key) + "` was set twice"); }
             const char *value = lua_tostring(L, -1);
             r->set_var(key, value);
 
@@ -99,4 +114,36 @@ int mb::api::lua::rule(lua_State *L) {
     }
 
     return 0;
+}
+
+int mb::api::lua::set(lua_State *L) {
+    // expected LUA stack layout
+    // 1 -> key             (string)
+    // 2 -> value           (string)
+
+    const char *key   = luaL_checkstring(L, 1);
+    const char *value = luaL_checkstring(L, 2);
+
+    g_buildContext.set_var(key, value);
+
+    return 0;
+}
+
+int mb::api::lua::get(lua_State *L) {
+    // expected LUA stack layout
+    // 1 -> key             (string)
+
+    const char *key = luaL_checkstring(L, 1);
+
+    // ---- no lua_error() throwing calls from this line forward ----
+
+    try {
+        auto value = g_buildContext.get_var(key);
+        if (!value) { throw std::runtime_error("Invalid key: " + std::string(key)); }
+        lua_pushstring(L, value.value().c_str());
+    } catch (const std::runtime_error &e) { luaL_error(L, e.what()); } catch (...) {
+        luaL_error(L, "Unknown error");
+    }
+
+    return 1;
 }
