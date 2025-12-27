@@ -2,6 +2,7 @@
 #define MBUILD_CONTEXT_H
 
 #include <build_graph.hpp>
+#include <build_rules.hpp>
 #include <string>
 #include <vector>
 
@@ -11,16 +12,24 @@ public:
     BuildContext() {}
     ~BuildContext() {}
 
-    void build(const std::string &rule, const std::vector<std::string> &ins, const std::vector<std::string> outs) {
+    inline void build(const std::string              &rule,
+                      const std::vector<std::string> &ins,
+                      const std::vector<std::string>  outs) {
         build(rule, to_paths(ins), to_paths(outs));
     }
 
-    void build(const std::string &rule, const std::vector<fs::path> &ins, const std::vector<fs::path> outs) {
+    inline void build(const std::string &rule, const std::vector<fs::path> &ins, const std::vector<fs::path> outs) {
         m_graph.build(rule).inputs(ins).outputs(outs, true);
     }
 
-    void emit(Emitter &e) {
-        m_graph.emit(e);
+    void emit(Emitter &e);
+
+    inline BuildGraph &graph() {
+        return m_graph;
+    }
+
+    inline BuildRules &rules() {
+        return m_rules;
     }
 
 private:
@@ -28,6 +37,7 @@ private:
 
 private:
     BuildGraph m_graph;
+    BuildRules m_rules;
 };
 
 inline BuildContext g_buildContext;

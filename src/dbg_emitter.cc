@@ -1,12 +1,10 @@
 #include <dbg_emitter.hpp>
 #include <terminal.hpp>
 
-void mb::DebugEmit::rule(const mb::Rule &rule) {
-    std::cout << "Rule: " << rule.name << "\n";
-    std::cout << "\tCommand: " << rule.command << "\n";
-    std::cout << "\tDescription: " << rule.description << "\n";
+void mb::DebugEmit::rule(const mb::BuildRules::Rule &rule) {
+    std::cout << "Rule: " << rule.m_name << "\n";
     std::cout << "\tVars: {\n";
-    for (const auto &[k, v] : rule.vars) { std::cout << "\t\t" << k << " = " << v << ",\n"; }
+    for (const auto &[k, v] : rule.m_vars) { std::cout << "\t\t" << k << " = " << v << ",\n"; }
     std::cout << "\t}\n";
 }
 

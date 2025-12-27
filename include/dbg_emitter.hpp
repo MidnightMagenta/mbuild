@@ -17,7 +17,7 @@ public:
         std::cout << std::left << std::setw(10) << name << " = " << value << "\n";
     }
 
-    void rule(const Rule &rule) override;
+    void rule(const BuildRules::Rule &rule) override;
 
     void edge(const std::string              &rule,
               const std::vector<std::string> &out,

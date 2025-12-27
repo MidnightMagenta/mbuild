@@ -7,6 +7,7 @@ void evaluate(const char *root) {
 
     luaL_openlibs(L);
     lua_register(L, "build", mb::api::lua::build);
+    lua_register(L, "rule", mb::api::lua::rule);
 
     if (luaL_dofile(L, (rootDir / "build.lua").string().c_str()) != LUA_OK) {
         std::string e = lua_tostring(L, -1);

@@ -22,20 +22,21 @@ pkg_check_modules(LUA REQUIRED lua54)
 add_executable(mbuild
     src/main.cc
     src/build_graph.cc
+    src/build_rules.cc
+    src/build_context.cc
     src/dbg_emitter.cc
     src/api.cc
-    src/build_context.cc
     src/evaluate.cc
 
     include/build_graph.hpp
+    include/build_rules.hpp
+    include/build_context.hpp
     include/emit.hpp
     include/dbg_emitter.hpp
-    include/terminal.hpp
-    include/types.hpp
     include/api.hpp
+    include/terminal.hpp
     include/utils.hpp
     include/global_config.hpp
-    include/build_context.hpp
 )
 
 target_include_directories(mbuild PRIVATE
