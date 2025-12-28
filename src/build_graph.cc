@@ -64,7 +64,7 @@ void mb::BuildGraph::emit(Emitter &e) {
         for (auto t_e : boost::make_iterator_range(out_edges(v, m_graph))) {
             Vertex artifact = target(t_e, m_graph);
             assert(m_graph[artifact].type == Node::Type::Artifact);
-            targets.push_back(std::get<Artifact>(m_graph[artifact].data).path.string());
+            targets.push_back((m_buildDir / std::get<Artifact>(m_graph[artifact].data).path).string());
         }
 
         std::vector<std::string> deps;

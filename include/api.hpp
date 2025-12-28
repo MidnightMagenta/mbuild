@@ -17,6 +17,17 @@ namespace lua {
 
     // lua signature: get(key : string) -> value : string
     int get(lua_State *L);
+
+    // lua signature build_dir(path : string)
+    int build_dir(lua_State *L);
+
+    // lua signature: get_rule(extention : string) -> rule : string
+    int get_rule(lua_State *L);
+
+    namespace fs {
+        int extension(lua_State *L);
+        int normalize(lua_State *L);
+    }// namespace fs
 }// namespace lua
 }// namespace mb::api
 

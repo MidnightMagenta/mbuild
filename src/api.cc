@@ -5,6 +5,8 @@
 // all lua_error() throwing calls may only be used in the API boundary function.
 // All fuunctions that are not called directly from LUA must not throw a lua_error()
 
+namespace lua = mb::api::lua;
+
 static std::vector<std::string> read_str_table(lua_State *L, int idx) {
     std::vector<std::string> res;
 
@@ -24,9 +26,9 @@ static std::vector<std::string> read_str_table(lua_State *L, int idx) {
     }
 
     return res;
-}
+}// namespace lua
 
-int mb::api::lua::build(lua_State *L) {
+int lua::build(lua_State *L) {
     // expected LUA stack layout
     // 1 -> rule        (string)
     // 2 -> inputs      (table : array)
@@ -77,7 +79,7 @@ int mb::api::lua::build(lua_State *L) {
     return 0;
 }
 
-int mb::api::lua::rule(lua_State *L) {
+int lua::rule(lua_State *L) {
     // expected LUA stack layout
     // 1 -> rule name       (string)
     // 2 -> property table  (table : map)
@@ -99,11 +101,25 @@ int mb::api::lua::rule(lua_State *L) {
             // -2 -> key (string)
             // -1 -> value
 
-            if (!lua_isstring(L, -2) || !lua_isstring(L, -1)) {
-                throw std::runtime_error("rule() table indices and values must be of type `string`");
-            }
+            if (!lua_isstring(L, -2)) { throw std::runtime_error("rule() table indices must be of type `string`"); }
             const char *key = lua_tostring(L, -2);
             if (r->get_var(key)) { throw std::runtime_error("Rule property `" + std::string(key) + "` was set twice"); }
+
+            // special keys
+            if (strcmp(key, "file_extensions") == 0) {
+                if (!lua_istable(L, -1)) { throw std::runtime_error("file_extensions must be an array of strings"); }
+
+                auto exts = read_str_table(L, -1);
+                for (const auto e : exts) { g_buildContext.rules().set_association(r->m_name, e); }
+
+                lua_pop(L, 1);
+                continue;
+            }
+
+            // generic keys
+            if (!lua_isstring(L, -1)) {
+                throw std::runtime_error("rule() expects type `string` for " + std::string(key));
+            }
             const char *value = lua_tostring(L, -1);
             r->set_var(key, value);
 
@@ -116,7 +132,7 @@ int mb::api::lua::rule(lua_State *L) {
     return 0;
 }
 
-int mb::api::lua::set(lua_State *L) {
+int lua::set(lua_State *L) {
     // expected LUA stack layout
     // 1 -> key             (string)
     // 2 -> value           (string)
@@ -129,7 +145,7 @@ int mb::api::lua::set(lua_State *L) {
     return 0;
 }
 
-int mb::api::lua::get(lua_State *L) {
+int lua::get(lua_State *L) {
     // expected LUA stack layout
     // 1 -> key             (string)
 
@@ -145,5 +161,71 @@ int mb::api::lua::get(lua_State *L) {
         luaL_error(L, "Unknown error");
     }
 
+    return 1;
+}
+
+int lua::build_dir(lua_State *L) {
+    // expected LUA stack layout
+    // 1 -> path            (string)
+
+    const char *p = luaL_checkstring(L, 1);
+
+    try {
+        g_buildContext.build_dir(p);
+    } catch (const std::runtime_error &e) { luaL_error(L, e.what()); } catch (...) {
+        luaL_error(L, "Unknown error");
+    }
+
+    return 0;
+}
+
+int lua::get_rule(lua_State *L) {
+    // expected LUA stack layout
+    // 1 -> extension       (string)
+
+    const char *ext = luaL_checkstring(L, 1);
+
+    try {
+        auto rule = g_buildContext.rules().get_rule_for_extension(ext);
+        if (!rule) {
+            lua_pushnil(L);
+            return 1;
+        }
+        lua_pushstring(L, rule.value().c_str());
+    } catch (const std::runtime_error &e) { luaL_error(L, e.what()); } catch (...) {
+        luaL_error(L, "Unknown error");
+    }
+
+    return 1;
+}
+
+int lua::fs::extension(lua_State *L) {
+    // expected LUA stack layout
+    // 1 -> path        (string)
+
+    const char *path = luaL_checkstring(L, 1);
+
+    try {
+        lua_pushstring(L, std::filesystem::path(path).extension().string().c_str());
+    } catch (const std::runtime_error &e) { luaL_error(L, e.what()); } catch (...) {
+        luaL_error(L, "Unknown error");
+    }
+
+    return 1;
+}
+
+int lua::fs::normalize(lua_State *L) {
+    // expected LUA stack layout
+    // 1 -> path        (string)
+
+    const char *path = luaL_checkstring(L, 1);
+
+    try {
+        std::filesystem::path p(path);
+        p = (p.is_absolute() ? p.lexically_relative(g_buildContext.get_root()) : p).lexically_normal();
+        lua_pushstring(L, p.string().c_str());
+    } catch (const std::runtime_error &e) { luaL_error(L, e.what()); } catch (...) {
+        luaL_error(L, "Unknown error");
+    }
     return 1;
 }

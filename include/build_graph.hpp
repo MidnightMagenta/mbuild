@@ -44,20 +44,11 @@ public:
     using DegreeSize = boost::graph_traits<Graph>::degree_size_type;
 
 public:
-    BuildGraph() {
-        m_root = fs::current_path();
-    }
-    BuildGraph(const fs::path &root) {
-        m_root = root;
-    }
+    BuildGraph() = delete;
+    BuildGraph(const fs::path &root, const fs::path &build)
+        : m_root(root),
+          m_buildDir(build) {}
     ~BuildGraph() {}
-
-    void set_root(const fs::path &root) {
-        m_root = root;
-    }
-    const fs::path &get_root() const {
-        return m_root;
-    }
 
     ArtifactID file(const fs::path &p);
     ActionID   action(const std::string &rule);
@@ -77,7 +68,8 @@ private:
     void validate();
 
 private:
-    fs::path                             m_root;
+    const fs::path                      &m_root;
+    const fs::path                      &m_buildDir;
     Graph                                m_graph;
     std::unordered_map<fs::path, Vertex> m_artifactIDMap;
 };

@@ -31,6 +31,17 @@ mb::BuildRules::Rule *mb::BuildRules::get(const std::string &name) {
     return &it->second;
 }
 
+void mb::BuildRules::set_association(const std::string &rule, const std::string &ext) {
+    auto [it, inserted] = m_ruleAssociations.emplace(ext, rule);
+    if (!inserted) { throw std::runtime_error("Redefinition of rule association for " + ext); }
+}
+
+std::optional<std::string> mb::BuildRules::get_rule_for_extension(const std::string &ext) {
+    auto it = m_ruleAssociations.find(ext);
+    if (it == m_ruleAssociations.end()) { return std::nullopt; }
+    return it->second;
+}
+
 void mb::BuildRules::emit(mb::Emitter &e) {
     for (const auto [k, v] : m_rules) { e.rule(v); }
 }

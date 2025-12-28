@@ -66,7 +66,10 @@ SpacesInSquareBrackets: false
 TabWidth: 4
 UseTab: Never
 
+Cpp11BracedListStyle: true
+
 BinPackParameters: false
+BinPackArguments: false
 PackConstructorInitializers: Never
 PenaltyBreakBeforeFirstCallParameter: 2
 PenaltyReturnTypeOnItsOwnLine: 1000000

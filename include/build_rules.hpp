@@ -31,6 +31,9 @@ public:
     Rule *create(const std::string &name);
     Rule *get(const std::string &name);
 
+    void                       set_association(const std::string &rule, const std::string &ext);
+    std::optional<std::string> get_rule_for_extension(const std::string &ext);
+
     void emit(Emitter &e);
 
 public:
@@ -38,7 +41,8 @@ public:
     ~BuildRules() {}
 
 private:
-    std::unordered_map<std::string, Rule> m_rules;
+    std::unordered_map<std::string, Rule>        m_rules;
+    std::unordered_map<std::string, std::string> m_ruleAssociations;
 };
 }// namespace mb
 
