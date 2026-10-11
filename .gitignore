@@ -1,0 +1,7 @@
+*.o
+*.d
+*.a
+
+mbuild
+compile_commands.json
+examplebuild
