@@ -2,10 +2,13 @@
 #include <context.h>
 #include <ecode.h>
 #include <errno.h>
+#include <lib/stack.h>
 #include <logging.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
+
+context *g_context;
 
 static void rdenv(struct config *cfg) {
     char *no_color;
@@ -64,18 +67,26 @@ static int readargs(struct config *cfg, const struct opts *opts) {
     return EC_NORMAL;
 }
 
+static void free_str(void *s) {
+    free(*(char **) s);
+}
+
 int ctx_init(context *ctx, const struct opts opts) {
     int res;
 
+    // startup init
     cfg_default(&ctx->cfg);
     rdenv(&ctx->cfg);
     if ((res = readargs(&ctx->cfg, &opts))) { return res; }
 
     log_init(&ctx->log, ctx->cfg.v, stderr, ctx->cfg.color);
 
+    // build config parser state init
+    ctx->pathstack = stack_create(sizeof(char *), free_str, 0);
+
     return 0;
 }
 
 void ctx_destroy(context *ctx) {
-    (void) ctx;
+    stack_free(ctx->pathstack);
 }

@@ -1,8 +1,15 @@
 CC := gcc
 AR := ar
 
-CFLAGS := -O0 -g -Iinclude -Iinclude/lib/lua
+OPT ?= 2
+CFLAGS := -O$(OPT) -Iinclude -Ilib/lua -DLUA_USE_POSIX
 ARFLAGS := rcs
+LDFLAGS := -lm
+
+ifdef DEBUG
+    CFLAGS += -g -fsanitize=address,undefined -fno-omit-frame-pointer
+    LDFLAGS += -fsanitize=address,undefined
+endif
 
 LUA_OBJS := lib/lua/lapi.o \
 			lib/lua/lauxlib.o \
@@ -39,8 +46,8 @@ LUA_OBJS := lib/lua/lapi.o \
 			lib/lua/lvm.o \
 			lib/lua/lzio.o
 
-LIB_OBJS := lib/path.o $(LUA_OBJS)
-OBJS := src/main.o src/logging.o src/context.o
+LIB_OBJS := lib/path.o lib/stack.o $(LUA_OBJS)
+OBJS := src/main.o src/logging.o src/context.o src/read_script.o
 
 LIB_TARGET := lib/libmbuild.a
 TARGET := mbuild
@@ -51,7 +58,7 @@ all: $(TARGET)
 
 $(TARGET): $(OBJS) $(LIB_TARGET)
 	@echo "CC $@"
-	@$(CC) -o $@ $^
+	@$(CC) $(LDFLAGS) -o $@ $^
 
 $(LIB_TARGET): $(LIB_OBJS)
 	@echo "AR $@"
