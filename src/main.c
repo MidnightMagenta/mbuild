@@ -11,7 +11,7 @@
 
 static int read_script(context *ctx) {
     lua_State *L;
-    char      *absp, *rootdir;
+    char      *absp = NULL, *rootdir = NULL;
     int        res = EC_NORMAL, status;
 
     L = luaL_newstate();
@@ -19,13 +19,26 @@ static int read_script(context *ctx) {
     luaL_openlibs(L);
     register_lua_funcs(L);
 
-    absp = abspath(ctx->cfg.rfile);
+    if (isdir(ctx->cfg.rfile)) {
+        char *realp = path_join(ctx->cfg.rfile, "Mbuild");
+        if (!realp) {
+            pr_err(&ctx->log, "could not resolve path '%s'", ctx->cfg.rfile);
+            goto fail0;
+        }
+        absp = abspath(realp);
+        free(realp);
+    } else if (isreg(ctx->cfg.rfile)) {
+        absp = abspath(ctx->cfg.rfile);
+    }
+
     if (!absp) {
+        pr_err(&ctx->log, "failed to resolve path '%s'", ctx->cfg.rfile);
         res = EC_ALLOCERR;
         goto fail0;
     }
     rootdir = proot(absp);
     if (!rootdir) {
+        pr_err(&ctx->log, "failed to resolve path root for '%s'", absp);
         res = EC_ALLOCERR;
         goto fail1;
     }
@@ -39,7 +52,7 @@ static int read_script(context *ctx) {
     }
 
     if (status != LUA_OK) {
-        pr_err(&ctx->log, "%s\n", lua_tolstring(L, -1, NULL));
+        pr_err(&ctx->log, "%s", lua_tolstring(L, -1, NULL));
         res = EC_RUNTIMEERR;
     }
 
