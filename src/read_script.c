@@ -10,7 +10,7 @@
 
 static int l_subdir(lua_State *L) {
     const char *path;
-    char       *fullp, *absp, *realp = NULL, *pathroot;
+    char       *fullp = NULL, *absp = NULL, *realp = NULL, *pathroot = NULL;
     int         status;
 
     if (lua_gettop(L) != 1) { return luaL_error(L, "subdir expected 1 argument, got %d", lua_gettop(L)); }
