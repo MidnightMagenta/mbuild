@@ -1,68 +1,36 @@
 CC := gcc
 AR := ar
 
-OPT ?= 2
-CFLAGS := -O$(OPT) -Iinclude -Ilib/lua -DLUA_USE_POSIX
+OPT ?= 0
+DEBUG ?= y
+CFLAGS := -O$(OPT) -Iinclude -Ilua -Imlib/include
 ARFLAGS := rcs
 LDFLAGS := -lm
 
-ifdef DEBUG
+ifeq ($(DEBUG), y)
     CFLAGS += -g -fsanitize=address,undefined -fno-omit-frame-pointer
     LDFLAGS += -fsanitize=address,undefined
 endif
 
-LUA_OBJS := lib/lua/lapi.o \
-			lib/lua/lauxlib.o \
-			lib/lua/lbaselib.o \
-			lib/lua/lcode.o \
-			lib/lua/lcorolib.o \
-			lib/lua/lctype.o \
-			lib/lua/ldblib.o \
-			lib/lua/ldebug.o \
-			lib/lua/ldo.o \
-			lib/lua/ldump.o \
-			lib/lua/lfunc.o \
-			lib/lua/lgc.o \
-			lib/lua/linit.o \
-			lib/lua/liolib.o \
-			lib/lua/llex.o \
-			lib/lua/lmathlib.o \
-			lib/lua/lmem.o \
-			lib/lua/loadlib.o \
-			lib/lua/lobject.o \
-			lib/lua/lopcodes.o \
-			lib/lua/loslib.o \
-			lib/lua/lparser.o \
-			lib/lua/lstate.o \
-			lib/lua/lstring.o \
-			lib/lua/lstrlib.o \
-			lib/lua/ltable.o \
-			lib/lua/ltablib.o \
-			lib/lua/ltm.o \
-			lib/lua/lua.o \
-			lib/lua/luac.o \
-			lib/lua/lundump.o \
-			lib/lua/lutf8lib.o \
-			lib/lua/lvm.o \
-			lib/lua/lzio.o
-
-LIB_OBJS := lib/path.o lib/stack.o $(LUA_OBJS)
 OBJS := src/main.o src/logging.o src/context.o src/read_script.o
 
-LIB_TARGET := lib/libmbuild.a
+LUA_TARGET := lua/liblua.a 
+MLIB_TARGET := mlib/libm.a
 TARGET := mbuild
 
 .PHONY: all clean
 
 all: $(TARGET)
 
-$(TARGET): $(OBJS) $(LIB_TARGET)
+$(TARGET): $(OBJS) $(LUA_TARGET) $(MLIB_TARGET)
 	@echo "CC $@"
 	@$(CC) $(LDFLAGS) -o $@ $^
 
-$(LIB_TARGET): $(LIB_OBJS)
-	@echo "AR $@"
-	@$(AR) $(ARFLAGS) $@ $^
+$(LUA_TARGET):
+	@$(MAKE) -C lua MYCFLAGS="-DLUA_USE_POSIX" -j
+
+$(MLIB_TARGET):
+	@make -C mlib -j
 
 %.o: %.c
 	@echo "CC $@"

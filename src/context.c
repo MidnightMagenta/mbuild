@@ -88,5 +88,5 @@ int ctx_init(context *ctx, const struct opts opts) {
 }
 
 void ctx_destroy(context *ctx) {
-    stack_free(ctx->pathstack);
+    if (ctx->pathstack) { stack_free(ctx->pathstack); }
 }

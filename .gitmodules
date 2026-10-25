@@ -1,0 +1,6 @@
+[submodule "mlib"]
+	path = mlib
+	url = git@github.com:MidnightMagenta/mlib.git
+[submodule "lua"]
+	path = lua
+	url = https://github.com/lua/lua.git
