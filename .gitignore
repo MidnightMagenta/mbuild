@@ -4,4 +4,6 @@
 
 mbuild
 compile_commands.json
+tests
 examplebuild
+.cache
