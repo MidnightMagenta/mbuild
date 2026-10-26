@@ -1,12 +1,14 @@
 #include <context.h>
 #include <ecode.h>
 #include <lauxlib.h>
-#include <lib/path.h>
-#include <lib/stack.h>
 #include <lua.h>
 #include <lualib.h>
+#include <ninja.h>
+#include <path.h>
 #include <read_script.h>
+#include <stack.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 static int read_script(context *ctx) {
@@ -44,6 +46,8 @@ static int read_script(context *ctx) {
     }
     if ((res = stack_push(ctx->pathstack, &rootdir))) { goto fail2; }
 
+    ctx->root_dir = strdup(rootdir);
+
     status = luaL_loadfile(L, absp);
     if (status == LUA_OK) {
         lua_pushstring(L, rootdir);
@@ -76,6 +80,8 @@ int main(int argc, char **argv) {
 
     res = read_script(&ctx);
     if (res) { goto fail0; }
+
+    res = write_ninja(&ctx);
 
 fail0:
     ctx_destroy(&ctx);

@@ -3,7 +3,8 @@ AR := ar
 
 OPT ?= 0
 DEBUG ?= y
-CFLAGS := -O$(OPT) -Iinclude -Ilua -Imlib/include
+CFLAGS := -O$(OPT)
+INCDIR := -Iinclude -Ilua -Imlib/include
 ARFLAGS := rcs
 LDFLAGS := -lm
 
@@ -12,13 +13,14 @@ ifeq ($(DEBUG), y)
     LDFLAGS += -fsanitize=address,undefined
 endif
 
-OBJS := src/main.o src/logging.o src/context.o src/read_script.o
+OBJS := src/main.o src/logging.o src/context.o src/read_script.o \
+		src/ninja_types.o src/ninja.o
 
-LUA_TARGET := lua/liblua.a 
+LUA_TARGET := lua/liblua.a
 MLIB_TARGET := mlib/libm.a
 TARGET := mbuild
 
-.PHONY: all clean
+.PHONY: all clean FORCE
 
 all: $(TARGET)
 
@@ -26,16 +28,18 @@ $(TARGET): $(OBJS) $(LUA_TARGET) $(MLIB_TARGET)
 	@echo "CC $@"
 	@$(CC) $(LDFLAGS) -o $@ $^
 
-$(LUA_TARGET):
-	@$(MAKE) -C lua MYCFLAGS="-DLUA_USE_POSIX" -j
+$(LUA_TARGET): FORCE
+	@$(MAKE) -C lua MYCFLAGS="-O$(OPT) -DLUA_USE_POSIX"
 
-$(MLIB_TARGET):
-	@make -C mlib -j
+$(MLIB_TARGET): FORCE
+	@make -C mlib CFLAGS="$(CFLAGS)"
 
 %.o: %.c
 	@echo "CC $@"
-	@$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
+	@$(CC) $(CFLAGS) $(INCDIR) -MMD -MP -c $< -o $@
 
 clean:
 	find . -type f -name '*.[oad]' -delete
 	rm -f mbuild compile_commands.json
+
+FORCE:

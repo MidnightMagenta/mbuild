@@ -2,8 +2,9 @@
 #define CONTEXT_H
 
 #include <config.h>
-#include <lib/stack.h>
+#include <dynarr.h>
 #include <logging.h>
+#include <stack.h>
 
 struct opts {
     int    argc;
@@ -16,7 +17,10 @@ typedef struct {
     struct log    log;
 
     // build config parser state
-    stack_t pathstack;
+    const char *root_dir;
+    const char *build_dir;
+    stack_t     pathstack;
+    ml_dynarr   rules;
 } context;
 
 extern context *g_context;

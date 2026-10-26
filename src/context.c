@@ -2,8 +2,9 @@
 #include <context.h>
 #include <ecode.h>
 #include <errno.h>
-#include <lib/stack.h>
 #include <logging.h>
+#include <ninja_types.h>
+#include <stack.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -82,11 +83,16 @@ int ctx_init(context *ctx, const struct opts opts) {
     log_init(&ctx->log, ctx->cfg.v, stderr, ctx->cfg.color);
 
     // build config parser state init
+    ctx->build_dir = getcwd(NULL, 0);
     ctx->pathstack = stack_create(sizeof(char *), free_str, 0);
+    ctx->rules     = ml_dynarr_new(0, sizeof(struct rule *), rule_dtor);
 
     return 0;
 }
 
 void ctx_destroy(context *ctx) {
+    if (ctx->build_dir) { free((void *) ctx->build_dir); }
+    if (ctx->root_dir) { free((void *) ctx->root_dir); }
     if (ctx->pathstack) { stack_free(ctx->pathstack); }
+    if (ctx->rules) { ml_dynarr_free(ctx->rules); }
 }
