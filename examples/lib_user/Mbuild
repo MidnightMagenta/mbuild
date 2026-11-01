@@ -16,12 +16,12 @@ mb.rule("ld", {
 	description = "LD $in -> $out",
 })
 
-local lib = mb.subdir("../static_lib")
+local lib = mb.subproject("../static_lib")
 
 local objs = mbl.compile("cc", mbl.files({ "main.c" }))
 local target = mb.build({
 	rule = "ld",
-	out = "libuser",
+	out = builddir .. "/libuser",
 	inputs = { objs, lib.lib },
 })
 

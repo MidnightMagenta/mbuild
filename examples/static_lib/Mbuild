@@ -27,10 +27,10 @@ end
 
 local objs = mbl.compile("cc", manifest.sources)
 
-mb.build({
+local archive = mb.build({
 	rule = "ar",
 	out = libtarget,
 	inputs = objs,
 })
 
-return { lib = mb.file(libtarget) }
+return { lib = archive }
