@@ -1,5 +1,4 @@
 local mbl = require("mbuildlib")
-local builddir = mb.builddir()
 
 mb.var("compiler", "gcc")
 mb.var("cflags", table.concat({ mbl.incl("../static_lib/include") }, " "))
@@ -21,7 +20,7 @@ local lib = mb.subproject("../static_lib")
 local objs = mbl.compile("cc", mbl.files({ "main.c" }))
 local target = mb.build({
 	rule = "ld",
-	out = builddir .. "/libuser",
+	out = mbl.bpath("libuser"),
 	inputs = { objs, lib.lib },
 })
 

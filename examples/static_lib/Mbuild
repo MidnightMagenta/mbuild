@@ -1,11 +1,10 @@
 local mbl = require("mbuildlib")
-local builddir = mb.builddir()
 
 mb.var("compiler", "gcc")
 mb.var("cflags", table.concat({ mbl.incl("include") }, " "))
 mb.var("arflags", "rcs")
 
-local libtarget = builddir .. "/libexample.a"
+local libtarget = mbl.bpath("/libexample.a")
 
 mb.rule("cc", {
 	command = "$compiler $cflags -MD -MF $out.d -c $in -o $out",

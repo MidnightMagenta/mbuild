@@ -1,0 +1,31 @@
+local mbl = require("mbuildlib")
+local config = mbl.rdcfg(".config")
+
+mb.var("cdefs", "-DMAGIC=" .. config.MAGIC_VALUE)
+mb.var("compiler", "gcc")
+mb.rule("cc", {
+	command = "$compiler $cdefs -c $in -o $out",
+	description = "CC $in -> $out",
+})
+mb.rule("ld", {
+	command = "$compiler -o $out $in",
+	description = "LD $in -> $out",
+})
+
+local sources = mbl.files({
+	"magic_printer.c",
+})
+
+local objs = mb.build({
+	rule = "cc",
+	out = mbl.bpath("magic_printer.o"),
+	inputs = sources,
+})
+
+local target = mb.build({
+	rule = "ld",
+	out = mbl.bpath("magic_printer"),
+	inputs = objs,
+})
+
+mb.default(target)
