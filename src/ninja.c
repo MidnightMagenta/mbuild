@@ -91,6 +91,35 @@ void write_build(FILE *outf, struct emit_ctx *e, const struct build *b) {
     for (size_t j = 0; j < nv; j++) { fprintf(outf, "  %s = %s\n", vars[j].k, vars[j].v); }
 }
 
+static void write_regen(FILE *outf, struct emit_ctx *e, context *ctx) {
+    char *exe     = realpath("/proc/self/exe", NULL);
+    char *relroot = relpath(ctx->root_script, e->build);
+    if (!exe || !relroot) {
+        e->failed = 1;
+        free(exe);
+        free(relroot);
+        return;
+    }
+
+    fputs("rule regen\n", outf);
+    fprintf(outf, "  command = %s -C . %s\n", exe, relroot);
+    fputs("  description = REGEN $out\n", outf);
+    fputs("  generator = 1\n\n", outf);
+
+    fputs("build build.ninja:", outf);
+    fputs(" regen", outf);
+    for (size_t i = 0; i < ml_dynarr_size(ctx->scripts); i++) {
+        fputc(' ', outf);
+        put_path(outf, e, *(char **) ml_dynarr_get(ctx->scripts, i));
+    }
+    fputs(" | ", outf);
+    put_path(outf, e, exe);
+    fputs("\n  pool = console\n\n", outf);
+
+    free(exe);
+    free(relroot);
+}
+
 int write_ninja(context *ctx) {
     struct emit_ctx e = {0};
 
@@ -114,6 +143,9 @@ int write_ninja(context *ctx) {
         free(outpath);
         return EC_RUNTIMEERR;
     }
+
+    fputs("# regen\n", outf);
+    write_regen(outf, &e, ctx);
 
     fputs("# global variables\n", outf);
     for (size_t i = 0; i < ml_dynarr_size(ctx->vars); i++) { write_var(outf, ml_dynarr_get(ctx->vars, i)); }

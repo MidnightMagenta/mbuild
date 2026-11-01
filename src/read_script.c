@@ -13,7 +13,7 @@
 
 static int l_subdir(lua_State *L) {
     const char *path;
-    char       *fullp = NULL, *absp = NULL, *realp = NULL, *pathroot = NULL;
+    char       *fullp = NULL, *absp = NULL, *realp = NULL, *pathroot = NULL, *script = NULL;
     int         status;
 
     if (lua_gettop(L) != 1) { return luaL_error(L, "'subdir' expected 1 argument, got %d", lua_gettop(L)); }
@@ -51,6 +51,22 @@ static int l_subdir(lua_State *L) {
         free(pathroot);
         free(absp);
         return luaL_error(L, "failed to push path root");
+    }
+
+    script = strdup(absp);
+    if (!script) {
+        stack_pop(g_context->pathstack, NULL);
+        free(pathroot);
+        free(absp);
+        return luaL_error(L, "subdir: oom");
+    }
+
+    if (ml_dynarr_push_back(g_context->scripts, &script)) {
+        free(script);
+        stack_pop(g_context->pathstack, NULL);
+        free(pathroot);
+        free(absp);
+        return luaL_error(L, "failed to record script path");
     }
 
     status = luaL_loadfile(L, absp);
@@ -374,7 +390,7 @@ static int l_default(lua_State *L) {
     return 0;
 }
 
-static int l_get_builddir(lua_State *L) {
+static int l_builddir(lua_State *L) {
     if (lua_gettop(L) != 0) { return luaL_error(L, "get_builddir takes no arguments. Got %d", lua_gettop(L)); }
 
     char *rel = relpath(g_context->build_dir, g_context->root_dir);
@@ -421,7 +437,7 @@ int register_lua_funcs(lua_State *L) {
             {"var", l_var},
             {"pool", l_pool},
             {"default", l_default},
-            {"get_builddir", l_get_builddir},
+            {"builddir", l_builddir},
             {NULL, NULL},
     };
     luaL_newlib(L, mbuildlib);

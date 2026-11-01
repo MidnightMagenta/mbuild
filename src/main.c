@@ -13,7 +13,7 @@
 
 static int read_script(context *ctx) {
     lua_State *L;
-    char      *absp = NULL, *rootdir = NULL;
+    char      *absp = NULL, *rootdir = NULL, *script = NULL;
     int        res = EC_NORMAL, status;
 
     L = luaL_newstate();
@@ -49,6 +49,29 @@ static int read_script(context *ctx) {
     ctx->root_dir = strdup(rootdir);
     ctx->rel_root = relpath(ctx->root_dir, ctx->build_dir);
 
+    ctx->root_script = strdup(absp);
+    if (!ctx->root_script) {
+        stack_pop(g_context->pathstack, NULL);
+        free(absp);
+        return EC_ALLOCERR;
+    }
+
+    script = strdup(absp);
+    if (!script) {
+        stack_pop(g_context->pathstack, NULL);
+        free(absp);
+        return EC_ALLOCERR;
+    }
+
+    if (ml_dynarr_push_back(g_context->scripts, &script)) {
+        free(script);
+        stack_pop(g_context->pathstack, NULL);
+        free(absp);
+        return EC_ALLOCERR;
+    }
+
+    chdir(ctx->root_dir);
+
     status = luaL_loadfile(L, absp);
     if (status == LUA_OK) {
         lua_pushstring(L, rootdir);
@@ -61,6 +84,7 @@ static int read_script(context *ctx) {
         res = EC_RUNTIMEERR;
     }
 
+    chdir(ctx->build_dir);
     stack_pop(ctx->pathstack, NULL);
 fail2:
     free(rootdir);

@@ -18,6 +18,7 @@ typedef struct {
 
     // build config parser state
     const char *root_dir;
+    const char *root_script;
     const char *build_dir;
     const char *rel_root;
     stack_t     pathstack;
@@ -26,6 +27,7 @@ typedef struct {
     ml_dynarr   vars;
     ml_dynarr   pools;
     ml_dynarr   defaults;
+    ml_dynarr   scripts;
 } context;
 
 extern context *g_context;

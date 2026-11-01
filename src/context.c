@@ -92,6 +92,7 @@ int ctx_init(context *ctx, const struct opts opts) {
     ctx->vars      = vars_new();
     ctx->pools     = pools_new();
     ctx->defaults  = defaults_new();
+    ctx->scripts   = ml_dynarr_new(0, sizeof(char *), str_dtor);
 
     return 0;
 }
@@ -99,6 +100,7 @@ int ctx_init(context *ctx, const struct opts opts) {
 void ctx_destroy(context *ctx) {
     if (ctx->build_dir) { free((void *) ctx->build_dir); }
     if (ctx->root_dir) { free((void *) ctx->root_dir); }
+    if (ctx->root_script) { free((void *) ctx->root_script); }
     if (ctx->rel_root) { free((void *) ctx->rel_root); }
     if (ctx->pathstack) { stack_free(ctx->pathstack); }
     if (ctx->rules) { ml_dynarr_free(ctx->rules); }
@@ -106,4 +108,5 @@ void ctx_destroy(context *ctx) {
     if (ctx->vars) { ml_dynarr_free(ctx->vars); }
     if (ctx->pools) { ml_dynarr_free(ctx->pools); }
     if (ctx->defaults) { ml_dynarr_free(ctx->defaults); }
+    if (ctx->scripts) { ml_dynarr_free(ctx->scripts); }
 }
