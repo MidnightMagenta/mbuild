@@ -38,6 +38,8 @@ function mbl.rdcfg(path)
 		end
 	end
 	f:close()
+
+	mb.track(path)
 	return cfg
 end
 
@@ -86,6 +88,13 @@ function mbl.incl(dirs)
 		flags[#flags + 1] = "-I" .. mb.rel(d)
 	end
 	return table.concat(flags, " ")
+end
+
+---prefix a path with the build directory
+---@param p string
+---@return string
+function mbl.bpath(p)
+	return mb.builddir() .. "/" .. p
 end
 
 return mbl
