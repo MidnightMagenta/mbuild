@@ -3,6 +3,7 @@
 #include <lauxlib.h>
 #include <lua.h>
 #include <lualib.h>
+#include <ninja.h>
 #include <ninja_types.h>
 #include <path.h>
 #include <read_script.h>
@@ -14,7 +15,7 @@
 static int l_subdir(lua_State *L) {
     const char *path;
     char       *fullp = NULL, *absp = NULL, *realp = NULL, *pathroot = NULL, *script = NULL;
-    int         status;
+    int         base, nret = 0, status;
 
     if (lua_gettop(L) != 1) { return luaL_error(L, "'subdir' expected 1 argument, got %d", lua_gettop(L)); }
     path = luaL_checkstring(L, 1);
@@ -69,11 +70,15 @@ static int l_subdir(lua_State *L) {
         return luaL_error(L, "failed to record script path");
     }
 
+    base = lua_gettop(L);
+    nret = 0;
+
     status = luaL_loadfile(L, absp);
     if (status == LUA_OK) {
         lua_pushstring(L, pathroot);
         lua_pushstring(L, absp);
-        status = lua_pcall(L, 2, 0, 0);
+        status = lua_pcall(L, 2, LUA_MULTRET, 0);
+        if (status == LUA_OK) { nret = lua_gettop(L) - base; }
     }
 
     stack_pop(g_context->pathstack, NULL);
@@ -81,7 +86,7 @@ static int l_subdir(lua_State *L) {
     free(absp);
 
     if (status != LUA_OK) { return lua_error(L); }
-    return 0;
+    return nret;
 }
 
 static int l_file(lua_State *L) {
@@ -401,6 +406,23 @@ static int l_builddir(lua_State *L) {
     return 1;
 }
 
+static int l_rel(lua_State *L) {
+    if (lua_gettop(L) != 1) { return luaL_error(L, "rel: expected 1 argument, got %d", lua_gettop(L)); }
+    const char *p = luaL_checkstring(L, 1);
+
+    if (p[0] == '/') {
+        lua_pushvalue(L, 1);
+        return 1;
+    }
+
+    char *rel = path_to_build_rel(g_context->root_dir, g_context->build_dir, p);
+    if (!rel) { return luaL_error(L, "rel: out of memory"); }
+
+    lua_pushstring(L, rel);
+    free(rel);
+    return 1;
+}
+
 static char *exe_dir() {
     char    buf[PATH_MAX];
     ssize_t n = readlink("/proc/self/exe", buf, sizeof(buf) - 1);
@@ -438,6 +460,7 @@ int register_lua_funcs(lua_State *L) {
             {"pool", l_pool},
             {"default", l_default},
             {"builddir", l_builddir},
+            {"rel", l_rel},
             {NULL, NULL},
     };
     luaL_newlib(L, mbuildlib);
