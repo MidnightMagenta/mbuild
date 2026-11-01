@@ -41,4 +41,51 @@ function mbl.rdcfg(path)
 	return cfg
 end
 
+---@class mbl.CompileOpts
+---@field rule string Name of a rule previously delcared with mb.rule
+---@field suffix string Suffix added to the end of the output name
+---@field implicit_out? string|string[]
+---@field implicit? string|string[] Inputs that trigger rebuilds but aren't passed to the command
+---@field order_only? string|string[]
+---@field vars? table<string, string> Per-edge variable bindings
+---@field pool? string
+
+---compilation invoker for multiple sources
+---@param rule string
+---@param srcs string|string[]
+---@param opts mbl.CompileOpts?
+---@return string[]
+function mbl.compile(rule, srcs, opts)
+	opts = opts or {}
+	opts.suffix = opts.suffix or ".o"
+	local outs = {}
+
+	local builddir = mb.builddir()
+	for _, p in ipairs(listify(srcs)) do
+		outs[#outs + 1] = mb.build({
+			rule = rule,
+			out = builddir .. "/" .. p .. opts.suffix,
+			implicit_out = opts.implicit_out,
+			inputs = p,
+			implicit = opts.implicit,
+			order_only = opts.order_only,
+			vars = opts.vars,
+			pool = opts.pool,
+		})
+	end
+
+	return outs
+end
+
+---GCC style include flag generator
+---@param dirs string|string[]
+---@return string
+function mbl.incl(dirs)
+	local flags = {}
+	for _, d in ipairs(listify(dirs)) do
+		flags[#flags + 1] = "-I" .. mb.rel(d)
+	end
+	return table.concat(flags, " ")
+end
+
 return mbl
