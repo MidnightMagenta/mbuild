@@ -3,7 +3,9 @@ AR := ar
 
 OPT ?= 2
 DEBUG ?= n
-CFLAGS := -O$(OPT)
+VERSION := $(shell cat VERSION)
+CPPFLAGS := -DMB_VERSION='"$(VERSION)"'
+CFLAGS := -O$(OPT) $(CPPFLAGS)
 INCDIR := -Iinclude -Ilua -Imlib/include
 ARFLAGS := rcs
 LDFLAGS := -lm

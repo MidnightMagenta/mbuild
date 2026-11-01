@@ -6,5 +6,7 @@
 #define EC_ALLOCERR   -2
 #define EC_RUNTIMEERR -3
 #define EC_INVAL      -4
+#define EC_STOP       -5
+#define EC_ABORT      -6
 
 #endif

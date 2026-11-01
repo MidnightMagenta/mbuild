@@ -22,6 +22,18 @@ static void rdenv(struct config *cfg) {
     if (!isatty(fileno(stderr))) { cfg->color = false; }
 }
 
+static inline void version() {
+    fprintf(stderr, "mbuild version %s\n", MB_VERSION);
+}
+
+static inline void usage() {
+    fprintf(stderr, "mbuild usage:\n");
+    fprintf(stderr, "mbuild [-C dir] [-v N] <path-to-Mbuild>\n");
+    fprintf(stderr,
+            "  -C --cdir        changes the CWD. This is the directory to which build.ninja will be writtern\n");
+    fprintf(stderr, "  -v --verbosity   sets the message verbosity\n");
+}
+
 static int readargs(struct config *cfg, const struct opts *opts) {
     int opt, idx, npos;
 
@@ -29,6 +41,12 @@ static int readargs(struct config *cfg, const struct opts *opts) {
         switch (opt) {
             case 0:
                 break;
+            case 'h':
+                usage();
+                return EC_STOP;
+            case 'V':
+                version();
+                return EC_STOP;
             case 'v': {
                 char *end;
                 errno  = 0;
@@ -51,9 +69,11 @@ static int readargs(struct config *cfg, const struct opts *opts) {
                 break;
             case ':':
                 fprintf(stderr, "missing argument for options %s\n", opts->argv[optind - 1]);
+                usage();
                 return EC_VALUERRR;
             case '?':
                 fprintf(stderr, "unknown option %s\n", opts->argv[optind - 1]);
+                usage();
                 return EC_VALUERRR;
         }
     }
