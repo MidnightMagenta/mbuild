@@ -1,6 +1,7 @@
 {
     "workspace.library": [
-        "./meta"
+        "./meta",
+        "./llib"
     ],
     "runtime.version": "Lua 5.5"
 }
