@@ -12,6 +12,8 @@ struct emit_ctx {
     int   failed;
 };
 
+char *path_to_build_rel(const char *root, const char *build, const char *p);
+
 void write_var(FILE *outf, const struct kv *v);
 void write_pool(FILE *outf, const struct kv *v);
 void write_default(FILE *outf, const char *d);

@@ -24,17 +24,21 @@ void write_rule(FILE *outf, const struct rule *r) {
     }
 }
 
-static char *to_build_rel(const struct emit_ctx *e, const char *p) {
-    char *joined = path_join(e->root, p);
+char *path_to_build_rel(const char *root, const char *build, const char *p) {
+    char *joined = path_join(root, p);
     if (!joined) { return NULL; }
 
     char *abs = abspath(joined);
     free(joined);
     if (!abs) { return NULL; }
 
-    char *rel = relpath(abs, e->build);
+    char *rel = relpath(abs, build);
     free(abs);
     return rel;
+}
+
+static char *to_build_rel(const struct emit_ctx *e, const char *p) {
+    return path_to_build_rel(e->root, e->build, p);
 }
 
 static void put_path(FILE *f, struct emit_ctx *e, const char *p) {
