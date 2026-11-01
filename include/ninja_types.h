@@ -52,10 +52,10 @@ static const char *build_keys[B_COUNT] = {
         "rule",
         "out",
         "implicit_out",
-        "input",
+        "inputs",
         "implicit",
         "order_only",
-        "var",
+        "vars",
         "pool",
 };
 
