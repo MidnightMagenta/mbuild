@@ -3,11 +3,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-int get_rule_idx(const char *k) {
-    for (size_t i = 0; i < R_COUNT; i++) {
-        if (!strcmp(k, rule_keys[i])) { return i; }
-    }
-    return R_COUNT;
+void build_dtor(void *p) {
+    struct build *b = p;
+    free(b->rule);
+    free(b->pool);
+    ml_dynarr_free(b->out);
+    ml_dynarr_free(b->implicit_out);
+    ml_dynarr_free(b->inputs);
+    ml_dynarr_free(b->implicit);
+    ml_dynarr_free(b->order_only);
+    ml_dynarr_free(b->vars);
 }
 
 struct rule *rule_new(const char *name) {
@@ -30,4 +35,18 @@ void rule_dtor(void *r) {
         if (rule->attr[i]) { free(rule->attr[i]); }
     }
     free(rule);
+}
+
+int get_rule_idx(const char *k) {
+    for (size_t i = 0; i < R_COUNT; i++) {
+        if (!strcmp(k, rule_keys[i])) { return i; }
+    }
+    return R_COUNT;
+}
+
+int get_build_idx(const char *k) {
+    for (size_t i = 0; i < B_COUNT; i++) {
+        if (!strcmp(k, build_keys[i])) { return i; }
+    }
+    return B_COUNT;
 }

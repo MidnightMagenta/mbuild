@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <logging.h>
 #include <ninja_types.h>
+#include <path.h>
 #include <stack.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -59,6 +60,7 @@ static int readargs(struct config *cfg, const struct opts *opts) {
 
     npos = opts->argc - optind;
     if (npos != 1) {
+        fprintf(stderr, "Path to source is required\n");
         // TODO:  usage
         return EC_VALUERRR;
     }
@@ -86,6 +88,10 @@ int ctx_init(context *ctx, const struct opts opts) {
     ctx->build_dir = getcwd(NULL, 0);
     ctx->pathstack = stack_create(sizeof(char *), free_str, 0);
     ctx->rules     = ml_dynarr_new(0, sizeof(struct rule *), rule_dtor);
+    ctx->build     = bctx_new();
+    ctx->vars      = vars_new();
+    ctx->pools     = pools_new();
+    ctx->defaults  = defaults_new();
 
     return 0;
 }
@@ -93,6 +99,11 @@ int ctx_init(context *ctx, const struct opts opts) {
 void ctx_destroy(context *ctx) {
     if (ctx->build_dir) { free((void *) ctx->build_dir); }
     if (ctx->root_dir) { free((void *) ctx->root_dir); }
+    if (ctx->rel_root) { free((void *) ctx->rel_root); }
     if (ctx->pathstack) { stack_free(ctx->pathstack); }
     if (ctx->rules) { ml_dynarr_free(ctx->rules); }
+    if (ctx->build) { ml_dynarr_free(ctx->build); }
+    if (ctx->vars) { ml_dynarr_free(ctx->vars); }
+    if (ctx->pools) { ml_dynarr_free(ctx->pools); }
+    if (ctx->defaults) { ml_dynarr_free(ctx->defaults); }
 }

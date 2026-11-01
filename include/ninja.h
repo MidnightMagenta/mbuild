@@ -5,7 +5,18 @@
 #include <ninja_types.h>
 #include <stdio.h>
 
+
+struct emit_ctx {
+    char *root;
+    char *build;
+    int   failed;
+};
+
+void write_var(FILE *outf, const struct kv *v);
+void write_pool(FILE *outf, const struct kv *v);
+void write_default(FILE *outf, const char *d);
 void write_rule(FILE *outf, const struct rule *r);
+void write_build(FILE *outf, struct emit_ctx *e, const struct build *b);
 
 int write_ninja(context *ctx);
 

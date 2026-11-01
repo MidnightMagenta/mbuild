@@ -47,6 +47,7 @@ static int read_script(context *ctx) {
     if ((res = stack_push(ctx->pathstack, &rootdir))) { goto fail2; }
 
     ctx->root_dir = strdup(rootdir);
+    ctx->rel_root = relpath(ctx->root_dir, ctx->build_dir);
 
     status = luaL_loadfile(L, absp);
     if (status == LUA_OK) {
