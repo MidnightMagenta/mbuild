@@ -8,6 +8,12 @@ mb = {}
 ---@return table? targets  -- by convention, a script may return a table
 function mb.subdir(dir) end
 
+---Loads another project
+---@param path string Sub-project directory (uses `<dir>/Mbuild`) or script file. Relative paths resolve against the calling project's root.
+---@param build_dir? string Sub-project's build directory, relative to the sub-project's root. Created if missing. Default: `"build"`.
+---@return any exports Whatever the sub-project's script returned (conventionally a table), or `nil`.
+function mb.subproject(path, build_dir) end
+
 ---converts a current script relative path to a file
 ---or a directory into a project root relative path
 ---@param file string

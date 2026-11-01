@@ -37,27 +37,21 @@ char *path_to_build_rel(const char *root, const char *build, const char *p) {
     return rel;
 }
 
-static char *to_build_rel(const struct emit_ctx *e, const char *p) {
-    return path_to_build_rel(e->root, e->build, p);
-}
-
-static void put_path(FILE *f, struct emit_ctx *e, const char *p) {
-    char *conv = NULL;
-
-    if (p[0] != '/') {
-        conv = to_build_rel(e, p);
-        if (!conv) {
-            e->failed = 1;
-            return;
-        }
-        p = conv;
-    }
-
+static void put_escaped(FILE *f, const char *p) {
     for (; *p; p++) {
         if ((*p == ' ') || (*p == ':') || (*p == '$')) { fputc('$', f); }
         fputc(*p, f);
     }
-    free(conv);
+}
+
+static void put_path(FILE *f, struct emit_ctx *e, const char *abs) {
+    char *rel = relpath(abs, e->build);
+    if (!rel) {
+        e->failed = 1;
+        return;
+    }
+    put_escaped(f, rel);
+    free(rel);
 }
 
 static void put_paths(FILE *f, struct emit_ctx *e, const char *prefix, ml_dynarr s) {
@@ -110,18 +104,55 @@ static void write_regen(FILE *outf, struct emit_ctx *e, context *ctx) {
     fputs("  description = REGEN $out\n", outf);
     fputs("  generator = 1\n\n", outf);
 
-    fputs("build build.ninja:", outf);
-    fputs(" regen", outf);
+    fputs("build build.ninja", outf);
+    for (size_t i = 0; i < ml_dynarr_size(ctx->subprojects); i++) {
+        struct project *sub = *(struct project **) ml_dynarr_get(ctx->subprojects, i);
+        fputc(' ', outf);
+        put_path(outf, e, sub->ninja);
+    }
+    fputs(": regen", outf);
     for (size_t i = 0; i < ml_dynarr_size(ctx->scripts); i++) {
         fputc(' ', outf);
         put_path(outf, e, *(char **) ml_dynarr_get(ctx->scripts, i));
     }
     fputs(" | ", outf);
-    put_path(outf, e, exe);
+    put_escaped(outf, exe);
     fputs("\n  pool = console\n\n", outf);
 
     free(exe);
     free(relroot);
+}
+
+static void write_project_body(FILE *outf, struct emit_ctx *e, const struct project *p) {
+    fputs("# global variables\n", outf);
+    for (size_t i = 0; i < ml_dynarr_size(p->vars); i++) { write_var(outf, ml_dynarr_get(p->vars, i)); }
+
+    fputs("\n# pools\n", outf);
+    for (size_t i = 0; i < ml_dynarr_size(p->pools); i++) { write_pool(outf, ml_dynarr_get(p->pools, i)); }
+
+    fputs("\n# rules\n", outf);
+    for (size_t i = 0; i < ml_dynarr_size(p->rules); i++) {
+        write_rule(outf, *((struct rule **) ml_dynarr_get(p->rules, i)));
+        fputc('\n', outf);
+    }
+
+    fputs("# edges\n", outf);
+    for (size_t i = 0; i < ml_dynarr_size(p->edges); i++) { write_build(outf, e, ml_dynarr_get(p->edges, i)); }
+}
+
+static int write_sub(context *ctx, struct emit_ctx *e, const struct project *sub) {
+    FILE *f = fopen(sub->ninja, "w");
+    if (!f) {
+        pr_err(&ctx->log, "Failed to open output file %s with: %s", sub->ninja, strerror(errno));
+        return EC_RUNTIMEERR;
+    }
+
+    write_project_body(f, e, sub);
+
+    int failed = ferror(f);
+    if (fclose(f) != 0) { failed = 1; }
+    if (failed) { pr_err(&ctx->log, "Failed to write %s", sub->ninja); }
+    return failed ? EC_RUNTIMEERR : EC_NORMAL;
 }
 
 int write_ninja(context *ctx) {
@@ -151,25 +182,26 @@ int write_ninja(context *ctx) {
     fputs("# regen\n", outf);
     write_regen(outf, &e, ctx);
 
-    fputs("# global variables\n", outf);
-    for (size_t i = 0; i < ml_dynarr_size(ctx->vars); i++) { write_var(outf, ml_dynarr_get(ctx->vars, i)); }
+    fputs("# subprojects\n", outf);
+    for (size_t i = 0; i < ml_dynarr_size(ctx->subprojects); i++) {
+        struct project *sub = *(struct project **) ml_dynarr_get(ctx->subprojects, i);
+        fputs("subninja ", outf);
+        put_path(outf, &e, sub->ninja);
+        fputc('\n', outf);
+    }
+    fputc('\n', outf);
 
-    fputs("\n# pools\n", outf);
-    for (size_t i = 0; i < ml_dynarr_size(ctx->pools); i++) { write_pool(outf, ml_dynarr_get(ctx->pools, i)); }
+    write_project_body(outf, &e, ctx->top);
 
-    fputs("\n# rules\n", outf);
-    for (size_t i = 0; i < ml_dynarr_size(ctx->rules); i++) {
-        write_rule(outf, *((struct rule **) ml_dynarr_get(ctx->rules, i)));
+    fputs("\n# defaults\n", outf);
+    if (ml_dynarr_size(ctx->top->defaults)) {
+        put_paths(outf, &e, "default", ctx->top->defaults);
         fputc('\n', outf);
     }
 
-    fputs("# edges\n", outf);
-    for (size_t i = 0; i < ml_dynarr_size(ctx->build); i++) { write_build(outf, &e, ml_dynarr_get(ctx->build, i)); }
-
-    fputs("\n# defaults\n", outf);
-    if (ml_dynarr_size(ctx->defaults)) {
-        put_paths(outf, &e, "default", ctx->defaults);
-        fputc('\n', outf);
+    for (size_t i = 0; i < ml_dynarr_size(ctx->subprojects); i++) {
+        struct project *sub = *(struct project **) ml_dynarr_get(ctx->subprojects, i);
+        if (write_sub(ctx, &e, sub)) { e.failed = 1; }
     }
 
     int failed = ferror(outf) || e.failed;

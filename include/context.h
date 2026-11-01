@@ -11,6 +11,8 @@ struct opts {
     char **argv;
 };
 
+struct project;
+
 typedef struct {
     // startup configuration
     struct config cfg;
@@ -22,12 +24,11 @@ typedef struct {
     const char *build_dir;
     const char *rel_root;
     stack_t     pathstack;
-    ml_dynarr   rules;
-    ml_dynarr   build;
-    ml_dynarr   vars;
-    ml_dynarr   pools;
-    ml_dynarr   defaults;
     ml_dynarr   scripts;
+
+    stack_t         projects;
+    ml_dynarr       subprojects;
+    struct project *top;
 } context;
 
 extern context *g_context;

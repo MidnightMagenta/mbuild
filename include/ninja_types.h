@@ -104,4 +104,17 @@ int          get_rule_idx(const char *k);
 
 int get_build_idx(const char *k);
 
+struct project {
+    char     *root;
+    char     *build;
+    char     *ninja;
+    char     *script;
+    int       ref;
+    ml_dynarr vars, pools, rules, edges, defaults;
+};
+
+struct project *project_new(const char *root, const char *build, const char *ninja, const char *script);
+void            project_free(struct project *p);
+void            project_dtor(void *p);
+
 #endif

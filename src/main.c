@@ -49,6 +49,16 @@ static int read_script(context *ctx) {
     ctx->root_dir = strdup(rootdir);
     ctx->rel_root = relpath(ctx->root_dir, ctx->build_dir);
 
+    char *ninja = path_join(ctx->build_dir, "build.ninja");
+    ctx->top    = ninja ? project_new(ctx->root_dir, ctx->build_dir, ninja, NULL) : NULL;
+    free(ninja);
+    if (!ctx->top || stack_push(ctx->projects, &ctx->top)) {
+        pr_err(&ctx->log, "failed to create the root project");
+        stack_pop(ctx->pathstack, NULL);
+        res = EC_ALLOCERR;
+        goto fail2;
+    }
+
     ctx->root_script = strdup(absp);
     if (!ctx->root_script) {
         stack_pop(g_context->pathstack, NULL);
@@ -86,6 +96,7 @@ static int read_script(context *ctx) {
 
     chdir(ctx->build_dir);
     stack_pop(ctx->pathstack, NULL);
+    stack_pop(ctx->projects, NULL);
 fail2:
     free(rootdir);
 fail1:
@@ -97,7 +108,7 @@ fail0:
 
 int main(int argc, char **argv) {
     int     res = 0;
-    context ctx;
+    context ctx = {0};
 
     res = ctx_init(&ctx, (struct opts){argc, argv});
     if (res) { goto fail0; }

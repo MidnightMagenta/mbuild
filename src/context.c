@@ -87,12 +87,11 @@ int ctx_init(context *ctx, const struct opts opts) {
     // build config parser state init
     ctx->build_dir = getcwd(NULL, 0);
     ctx->pathstack = stack_create(sizeof(char *), free_str, 0);
-    ctx->rules     = ml_dynarr_new(0, sizeof(struct rule *), rule_dtor);
-    ctx->build     = bctx_new();
-    ctx->vars      = vars_new();
-    ctx->pools     = pools_new();
-    ctx->defaults  = defaults_new();
     ctx->scripts   = ml_dynarr_new(0, sizeof(char *), str_dtor);
+
+    ctx->projects    = stack_create(sizeof(struct project *), NULL, 0);
+    ctx->subprojects = ml_dynarr_new(0, sizeof(struct project *), project_dtor);
+    ctx->top         = NULL; /* created in read_script once the root dir is known */
 
     return 0;
 }
@@ -103,10 +102,8 @@ void ctx_destroy(context *ctx) {
     if (ctx->root_script) { free((void *) ctx->root_script); }
     if (ctx->rel_root) { free((void *) ctx->rel_root); }
     if (ctx->pathstack) { stack_free(ctx->pathstack); }
-    if (ctx->rules) { ml_dynarr_free(ctx->rules); }
-    if (ctx->build) { ml_dynarr_free(ctx->build); }
-    if (ctx->vars) { ml_dynarr_free(ctx->vars); }
-    if (ctx->pools) { ml_dynarr_free(ctx->pools); }
-    if (ctx->defaults) { ml_dynarr_free(ctx->defaults); }
+    if (ctx->subprojects) { ml_dynarr_free(ctx->subprojects); }
+    if (ctx->top) { project_free(ctx->top); }
+    if (ctx->projects) { stack_free(ctx->projects); }
     if (ctx->scripts) { ml_dynarr_free(ctx->scripts); }
 }

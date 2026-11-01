@@ -1,5 +1,6 @@
 #include <context.h>
 #include <ecode.h>
+#include <errno.h>
 #include <lauxlib.h>
 #include <lua.h>
 #include <lualib.h>
@@ -10,7 +11,40 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
+
+static struct project *cur_project(void) {
+    return *(struct project **) stack_peek(g_context->projects);
+}
+
+static char *resolve_abs(const char *root, const char *p) {
+    char *joined = (p[0] == '/') ? strdup(p) : path_join(root, p);
+    if (!joined) { return NULL; }
+
+    char *abs = abspath(joined);
+    free(joined);
+    return abs;
+}
+
+static int mkdir_p(const char *path) {
+    char *tmp = strdup(path);
+    if (!tmp) { return -1; }
+
+    for (char *p = tmp + 1; *p; p++) {
+        if (*p != '/') { continue; }
+        *p = '\0';
+        if ((mkdir(tmp, 0777) != 0) && (errno != EEXIST)) {
+            free(tmp);
+            return -1;
+        }
+        *p = '/';
+    }
+
+    int res = ((mkdir(tmp, 0777) != 0) && (errno != EEXIST)) ? -1 : 0;
+    free(tmp);
+    return res;
+}
 
 static int l_subdir(lua_State *L) {
     const char *path;
@@ -89,6 +123,114 @@ static int l_subdir(lua_State *L) {
     return nret;
 }
 
+static int l_subproject(lua_State *L) {
+    if ((lua_gettop(L) < 1) || (lua_gettop(L) > 2)) {
+        return luaL_error(L, "subproject: expected 1 or 2 arguments, got %d", lua_gettop(L));
+    }
+    const char *path = luaL_checkstring(L, 1);
+    const char *bdir = luaL_optstring(L, 2, "build");
+
+    char *target = resolve_abs(cur_project()->root, path);
+    if (!target) { return luaL_error(L, "subproject: oom"); }
+    char *script = isdir(target) ? path_join(target, "Mbuild") : strdup(target);
+    free(target);
+    if (!script || !isreg(script)) {
+        free(script);
+        return luaL_error(L, "subproject: no script found at '%s'", path);
+    }
+
+    for (size_t i = 0; i < ml_dynarr_size(g_context->subprojects); i++) {
+        struct project *known = *(struct project **) ml_dynarr_get(g_context->subprojects, i);
+        if (strcmp(known->script, script) != 0) { continue; }
+        free(script);
+        if (known->ref == LUA_NOREF) { return luaL_error(L, "subproject: circular reference to '%s'", path); }
+        if (known->ref == LUA_REFNIL) {
+            lua_pushnil(L);
+        } else {
+            lua_rawgeti(L, LUA_REGISTRYINDEX, known->ref);
+        }
+        return 1;
+    }
+
+    char *root     = proot(script);
+    char *build    = root ? resolve_abs(root, bdir) : NULL;
+    char *ninja    = build ? path_join(build, "mbuild.sub.ninja") : NULL;
+    char *cwd      = getcwd(NULL, 0);
+    char *pathroot = root ? strdup(root) : NULL;
+
+    struct project *sub = (ninja && cwd) ? project_new(root, build, ninja, script) : NULL;
+    free(root);
+    free(build);
+    free(ninja);
+    if (!sub || !pathroot || (mkdir_p(sub->build) != 0)) {
+        project_free(sub);
+        free(pathroot);
+        free(cwd);
+        free(script);
+        return luaL_error(L, "subproject: cannot set up '%s'", path);
+    }
+
+    sub->ref = LUA_NOREF;
+    if (ml_dynarr_push_back(g_context->subprojects, &sub)) {
+        project_free(sub);
+        free(pathroot);
+        free(cwd);
+        free(script);
+        return luaL_error(L, "subproject: oom");
+    }
+
+    if (stack_push(g_context->projects, &sub)) {
+        free(pathroot);
+        free(cwd);
+        free(script);
+        return luaL_error(L, "subproject: oom");
+    }
+    if (stack_push(g_context->pathstack, &pathroot)) {
+        stack_pop(g_context->projects, NULL);
+        free(pathroot);
+        free(cwd);
+        free(script);
+        return luaL_error(L, "subproject: oom");
+    }
+    if (ml_dynarr_push_back(g_context->scripts, &script)) {
+        stack_pop(g_context->pathstack, NULL);
+        stack_pop(g_context->projects, NULL);
+        free(pathroot);
+        free(cwd);
+        free(script);
+        return luaL_error(L, "subproject: oom");
+    }
+
+    int status;
+    if (chdir(sub->root) != 0) {
+        lua_pushfstring(L, "subproject: cannot enter '%s': %s", sub->root, strerror(errno));
+        status = LUA_ERRRUN;
+    } else {
+        status = luaL_loadfile(L, script);
+        if (status == LUA_OK) {
+            lua_pushstring(L, sub->root);
+            lua_pushstring(L, script);
+            status = lua_pcall(L, 2, 1, 0);
+        }
+        if ((chdir(cwd) != 0) && (status == LUA_OK)) {
+            lua_pop(L, 1);
+            lua_pushstring(L, "subproject: cannot restore the working directory");
+            status = LUA_ERRRUN;
+        }
+    }
+
+    stack_pop(g_context->pathstack, NULL);
+    stack_pop(g_context->projects, NULL);
+    free(pathroot);
+    free(cwd);
+
+    if (status != LUA_OK) { return lua_error(L); }
+
+    lua_pushvalue(L, -1);
+    sub->ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    return 1;
+}
+
 static int l_file(lua_State *L) {
     const char *p;
     char       *relp;
@@ -98,10 +240,10 @@ static int l_file(lua_State *L) {
 
     if (p[0] != '/') {
         char *fullp = path_join(*(char **) stack_peek(g_context->pathstack), p);
-        relp        = relpath(fullp, g_context->root_dir);
+        relp        = relpath(fullp, cur_project()->root);
         free(fullp);
     } else {
-        relp = relpath(p, g_context->root_dir);
+        relp = relpath(p, cur_project()->root);
     }
 
 
@@ -132,20 +274,17 @@ static int l_rule(lua_State *L) {
     }
 
     lua_getfield(L, 2, "command");
-    if (lua_isnil(L, -1)) {
-        free(r);
-        return luaL_error(L, "rule '%s': missing 'command'", name);
-    }
+    if (lua_isnil(L, -1)) { return luaL_error(L, "rule '%s': missing 'command'", name); }
     lua_pop(L, 1);
 
     r = rule_new(name);
-    if (!r) { return luaL_error(L, "rule '%s: failed to allocate rule"); }
+    if (!r) { return luaL_error(L, "rule '%s': failed to allocate rule", name); }
 
     for (size_t i = 0; i < R_COUNT; i++) {
         lua_getfield(L, 2, rule_keys[i]);
         if (!lua_isnil(L, -1)) {
             if (!lua_isstring(L, -1)) {
-                rule_dtor(r);
+                rule_dtor(&r);
                 return luaL_error(L, "rule '%s': value for %s must be a string", name, rule_keys[i]);
             }
             r->attr[get_rule_idx(rule_keys[i])] = strdup(lua_tostring(L, -1));
@@ -153,7 +292,7 @@ static int l_rule(lua_State *L) {
         lua_pop(L, 1);
     }
 
-    ml_dynarr_push_back(g_context->rules, &r);
+    ml_dynarr_push_back(cur_project()->rules, &r);
 
     lua_pushstring(L, name);
     return 1;
@@ -201,7 +340,9 @@ static void oom(lua_State *L) {
 }
 
 static void sv_push(lua_State *L, ml_dynarr a, const char *s) {
-    char *copy = strdup(s);
+    if (s[0] == '\0') { luaL_error(L, "empty path is not allowed"); }
+
+    char *copy = resolve_abs(cur_project()->root, s);
     if (!copy) { oom(L); }
     if (ml_dynarr_push_back(a, &copy)) {
         free(copy);
@@ -306,7 +447,7 @@ static void push_strlist(lua_State *L, ml_dynarr a) {
 }
 
 static int l_build(lua_State *L) {
-    ml_dynarr ctx = g_context->build;
+    ml_dynarr ctx = cur_project()->edges;
     luaL_checktype(L, 1, LUA_TTABLE);
 
     struct build *b    = ctx_add(L, ctx);
@@ -338,7 +479,7 @@ static int l_var(lua_State *L) {
     const char *k = luaL_checkstring(L, 1);
     const char *v = luaL_checkstring(L, 2);
 
-    kv_push(L, g_context->vars, k, v);
+    kv_push(L, cur_project()->vars, k, v);
 
     return 0;
 }
@@ -369,14 +510,14 @@ static int l_pool(lua_State *L) {
             return luaL_argerror(L, 2, "pool depth must be a string or integer");
     }
 
-    kv_push(L, g_context->pools, name, depth);
+    kv_push(L, cur_project()->pools, name, depth);
     return 0;
 }
 
 static int l_default(lua_State *L) {
     if (lua_gettop(L) != 1) return luaL_error(L, "default: expected 1 argument, got %d", lua_gettop(L));
 
-    ml_dynarr defaults = g_context->defaults;
+    ml_dynarr defaults = cur_project()->defaults;
 
     if (lua_type(L, 1) == LUA_TSTRING) {
         sv_push(L, defaults, lua_tostring(L, 1));
@@ -398,7 +539,8 @@ static int l_default(lua_State *L) {
 static int l_builddir(lua_State *L) {
     if (lua_gettop(L) != 0) { return luaL_error(L, "get_builddir takes no arguments. Got %d", lua_gettop(L)); }
 
-    char *rel = relpath(g_context->build_dir, g_context->root_dir);
+    struct project *cur = cur_project();
+    char           *rel = relpath(cur->build, cur->root);
     if (!rel) { return luaL_error(L, "get_builddir: oom"); }
 
     lua_pushstring(L, rel);
@@ -415,7 +557,9 @@ static int l_rel(lua_State *L) {
         return 1;
     }
 
-    char *rel = path_to_build_rel(g_context->root_dir, g_context->build_dir, p);
+    char *abs = resolve_abs(cur_project()->root, p);
+    char *rel = abs ? relpath(abs, g_context->top->build) : NULL;
+    free(abs);
     if (!rel) { return luaL_error(L, "rel: out of memory"); }
 
     lua_pushstring(L, rel);
@@ -452,6 +596,7 @@ static int setup_lua_path(lua_State *L) {
 int register_lua_funcs(lua_State *L) {
     static const luaL_Reg mbuildlib[] = {
             {"subdir", l_subdir},
+            {"subproject", l_subproject},
             {"file", l_file},
             {"rule", l_rule},
             {"flatten", l_flatten},
