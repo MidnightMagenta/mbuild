@@ -37,3 +37,7 @@ function mb.rule(name, spec) end
 ---@param spec table<string, any>
 ---@return string[]
 function mb.build(spec) end
+
+---get the build directory
+---@return string
+function mb.builddir() end
