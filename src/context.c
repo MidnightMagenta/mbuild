@@ -22,8 +22,10 @@ static void rdenv(struct config *cfg) {
     if (!isatty(fileno(stderr))) { cfg->color = false; }
 }
 
+extern const char *mb_version;
+
 static inline void version() {
-    fprintf(stderr, "mbuild version %s\n", MB_VERSION);
+    fprintf(stderr, "mbuild version %s\n", mb_version);
 }
 
 static inline void usage() {

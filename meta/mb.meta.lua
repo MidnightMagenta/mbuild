@@ -1,6 +1,7 @@
 ---@meta
 
 ---@class mb
+---@field version string  The mbuild version
 mb = {}
 
 ---@alias NestedStrings (string | NestedStrings)[]
@@ -81,3 +82,7 @@ function mb.builddir() end
 ---@param d string
 ---@return string
 function mb.rel(d) end
+
+---get the version of mbuild running this fule (as a string)
+---@return string
+function mb.version() end

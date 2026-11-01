@@ -640,6 +640,8 @@ int register_lua_funcs(lua_State *L) {
             {NULL, NULL},
     };
     luaL_newlib(L, mbuildlib);
+    lua_pushstring(L, MB_VERSION);
+    lua_setfield(L, -2, "version");
     lua_setglobal(L, "mb");
 
     if (setup_lua_path(L)) { return EC_RUNTIMEERR; }

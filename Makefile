@@ -16,7 +16,7 @@ ifeq ($(DEBUG), y)
 endif
 
 OBJS := src/main.o src/logging.o src/context.o src/read_script.o \
-		src/ninja_types.o src/ninja.o
+		src/ninja_types.o src/ninja.o src/version.o
 
 LUA_TARGET := lua/liblua.a
 MLIB_TARGET := mlib/libm.a
@@ -36,6 +36,10 @@ $(LUA_TARGET): FORCE
 $(MLIB_TARGET): FORCE
 	@make -C mlib CFLAGS="$(CFLAGS)"
 
+src/version.o: src/version.c VERSION
+	@echo "CC $@"
+	@$(CC) $(CFLAGS) $(INCDIR) -MMD -MP -c $< -o $@
+
 %.o: %.c
 	@echo "CC $@"
 	@$(CC) $(CFLAGS) $(INCDIR) -MMD -MP -c $< -o $@
@@ -45,3 +49,5 @@ clean:
 	rm -f mbuild compile_commands.json
 
 FORCE:
+ 
+-include $(OBJS:.o=.d)

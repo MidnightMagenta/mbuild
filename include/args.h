@@ -6,8 +6,8 @@
 
 enum {
     OPT_CDIR      = 'C',
-    OPT_VERBOSITY = 'v',
-    OPT_VERSION   = 'V',
+    OPT_VERBOSITY = 'V',
+    OPT_VERSION   = 'v',
     OPT_HELP      = 'h',
     OPT_LONGONLY  = 256,
 };
@@ -20,6 +20,6 @@ static struct option longopts[] = {
         {0, 0, 0, 0},
 };
 
-#define SHORTOPT_STRING ":C:v:Vh"
+#define SHORTOPT_STRING ":C:V:vh"
 
 #endif
