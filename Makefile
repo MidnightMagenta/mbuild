@@ -1,8 +1,8 @@
 CC := gcc
 AR := ar
 
-OPT ?= 0
-DEBUG ?= y
+OPT ?= 2
+DEBUG ?= n
 CFLAGS := -O$(OPT)
 INCDIR := -Iinclude -Ilua -Imlib/include
 ARFLAGS := rcs
