@@ -1,0 +1,34 @@
+local mbl = require("mbuildlib")
+local builddir = mb.builddir()
+
+mb.var("compiler", "gcc")
+
+mb.rule("cc", {
+	command = "$compiler -MD -MF $out.d -c $in -o $out",
+	description = "CC $in -> $out",
+	deps = "gcc",
+	depfile = "$out.d",
+})
+mb.rule("ld", {
+	command = "$compiler -o $out $in",
+	description = "LD $in -> $out",
+})
+
+local sources = mbl.files({
+	"main.c",
+	"mf0.c",
+	"mf1.c",
+	"mf2.c",
+	"mf3.c",
+	"mf4.c",
+})
+
+local objs = mbl.compile("cc", sources)
+
+local target = mb.build({
+	rule = "ld",
+	out = builddir .. "/" .. "multifile",
+	inputs = objs,
+})
+
+mb.default(target)

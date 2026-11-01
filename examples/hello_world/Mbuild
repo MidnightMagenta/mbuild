@@ -1,0 +1,30 @@
+local mbl = require("mbuildlib")
+local builddir = mb.builddir()
+
+mb.var("compiler", "gcc")
+mb.rule("cc", {
+	command = "$compiler -c $in -o $out",
+	description = "CC $in -> $out",
+})
+mb.rule("ld", {
+	command = "$compiler -o $out $in",
+	description = "LD $in -> $out",
+})
+
+local sources = mbl.files({
+	"hello_world.c",
+})
+
+local objs = mb.build({
+	rule = "cc",
+	out = builddir .. "/" .. "hello_world.o",
+	inputs = sources,
+})
+
+local target = mb.build({
+	rule = "ld",
+	out = builddir .. "/" .. "hello_world",
+	inputs = objs,
+})
+
+mb.default(target)

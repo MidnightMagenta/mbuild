@@ -1,0 +1,12 @@
+local mbl = require("mbuildlib")
+
+local manifest = {
+	sources = mbl.files({
+		"add.c",
+		"sub.c",
+		"mul.c",
+		"div.c",
+	}),
+}
+
+return manifest

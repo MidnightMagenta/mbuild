@@ -1,0 +1,36 @@
+local mbl = require("mbuildlib")
+local builddir = mb.builddir()
+
+mb.var("compiler", "gcc")
+mb.var("cflags", table.concat({ mbl.incl("include") }, " "))
+mb.var("arflags", "rcs")
+
+local libtarget = builddir .. "/libexample.a"
+
+mb.rule("cc", {
+	command = "$compiler $cflags -MD -MF $out.d -c $in -o $out",
+	description = "CC $in -> $out",
+	deps = "gcc",
+	depfile = "$out.d",
+})
+
+mb.rule("ar", {
+	command = "ar $arflags $out $in",
+	description = "AR $out",
+})
+
+local manifest = mb.subdir("src")
+
+if manifest == nil then
+	error("There are no sources", 2)
+end
+
+local objs = mbl.compile("cc", manifest.sources)
+
+mb.build({
+	rule = "ar",
+	out = libtarget,
+	inputs = objs,
+})
+
+return { lib = mb.file(libtarget) }

@@ -1,0 +1,28 @@
+local mbl = require("mbuildlib")
+local builddir = mb.builddir()
+
+mb.var("compiler", "gcc")
+mb.var("cflags", table.concat({ mbl.incl("../static_lib/include") }, " "))
+mb.var("arflags", "rcs")
+
+mb.rule("cc", {
+	command = "$compiler $cflags -MD -MF $out.d -c $in -o $out",
+	description = "CC $in -> $out",
+	deps = "gcc",
+	depfile = "$out.d",
+})
+mb.rule("ld", {
+	command = "$compiler -o $out $in",
+	description = "LD $in -> $out",
+})
+
+local lib = mb.subdir("../static_lib")
+
+local objs = mbl.compile("cc", mbl.files({ "main.c" }))
+local target = mb.build({
+	rule = "ld",
+	out = "libuser",
+	inputs = { objs, lib.lib },
+})
+
+mb.default(target)
