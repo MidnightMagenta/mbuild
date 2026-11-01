@@ -7,6 +7,29 @@ local function listify(x)
 	return x or {}
 end
 
+local function parse_version(s)
+	local maj, min, pat = s:match("^(%d+)%.(%d+)%.(%d+)")
+	if not maj then
+		error("invalid version '" .. s .. "'", 3)
+	end
+	return { tonumber(maj), tonumber(min), tonumber(pat) }
+end
+
+---@param a string
+---@param b string
+---@return integer
+function mbl.vercmp(a, b)
+	local x, y = parse_version(a), parse_version(b)
+	for i = 1, 3 do
+		if x[i] ~= y[i] then
+			return x[i] < y[i] and -1 or 1
+		end
+	end
+	return 0
+end
+
+---@param paths string|string[]
+---@return string[]
 function mbl.files(paths)
 	local opaths = {}
 	for _, p in ipairs(listify(paths)) do
@@ -15,6 +38,8 @@ function mbl.files(paths)
 	return opaths
 end
 
+---@param path string
+---@return table<string, string>
 function mbl.rdcfg(path)
 	local f, err = io.open(path, "r")
 	if not f then
