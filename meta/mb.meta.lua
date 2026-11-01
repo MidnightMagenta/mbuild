@@ -3,6 +3,8 @@
 ---@class mb
 mb = {}
 
+---@alias NestedStrings (string | NestedStrings)[]
+
 ---executes a script in a subdirectory
 ---@param dir string
 ---@return table? targets  -- by convention, a script may return a table
@@ -56,9 +58,9 @@ function mb.rule(name, spec) end
 ---@field rule string Name of a rule previously declared with mb.rule
 ---@field out string|string[] Explicit outputs
 ---@field implicit_out? string|string[]
----@field inputs? string|string[]
----@field implicit? string|string[] Inputs that trigger rebuilds but aren't passed to the command
----@field order_only? string|string[]
+---@field inputs? string|NestedStrings
+---@field implicit? string|NestedStrings Inputs that trigger rebuilds but aren't passed to the command
+---@field order_only? string|NestedStrings
 ---@field vars? table<string, string> Per-edge variable bindings
 ---@field pool? string
 
@@ -66,6 +68,10 @@ function mb.rule(name, spec) end
 ---@param spec mb.BuildSpec
 ---@return string[]
 function mb.build(spec) end
+
+---track a file for regeneration
+---@param p string
+function mb.track(p) end
 
 ---get the build directory
 ---@return string

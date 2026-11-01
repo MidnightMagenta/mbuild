@@ -536,6 +536,36 @@ static int l_default(lua_State *L) {
     return 0;
 }
 
+static int l_track(lua_State *L) {
+    if (lua_gettop(L) != 1) { return luaL_error(L, "track: expected 1 argument, got %d", lua_gettop(L)); }
+    const char *p = luaL_checkstring(L, 1);
+    if (p[0] == '\0') { return luaL_error(L, "track: empty path is not allowed"); }
+
+    char *abs = resolve_abs(cur_project()->root, p);
+    if (!abs) { return luaL_error(L, "track: oom"); }
+
+    if (!isreg(abs)) {
+        char *msg = strdup(abs);
+        free(abs);
+        lua_pushfstring(L, "track: '%s' is not a regular file", msg ? msg : p);
+        free(msg);
+        return lua_error(L);
+    }
+
+    for (size_t i = 0; i < ml_dynarr_size(g_context->scripts); i++) {
+        if (!strcmp(abs, *(char **) ml_dynarr_get(g_context->scripts, i))) {
+            free(abs);
+            return 0;
+        }
+    }
+
+    if (ml_dynarr_push_back(g_context->scripts, &abs)) {
+        free(abs);
+        return luaL_error(L, "track: oom");
+    }
+    return 0;
+}
+
 static int l_builddir(lua_State *L) {
     if (lua_gettop(L) != 0) { return luaL_error(L, "get_builddir takes no arguments. Got %d", lua_gettop(L)); }
 
@@ -604,6 +634,7 @@ int register_lua_funcs(lua_State *L) {
             {"var", l_var},
             {"pool", l_pool},
             {"default", l_default},
+            {"track", l_track},
             {"builddir", l_builddir},
             {"rel", l_rel},
             {NULL, NULL},
