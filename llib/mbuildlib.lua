@@ -1,6 +1,7 @@
-local modname, filepath = ...
+local _, filepath = ...
 mb.track(filepath)
 
+---@class mbl
 local mbl = {}
 
 local function listify(x)
@@ -41,8 +42,38 @@ function mbl.files(paths)
 	return opaths
 end
 
+---@class config
+---@field data table<string, string>
+local config = {}
+config.__index = config
+
+---@param data table<string, string>
+---@return config
+function config.new(data)
+	return setmetatable({ data = data or {} }, config)
+end
+
+---@generic T
+---@param key string
+---@param default T?
+---@return string|T
+function config:get(key, default)
+	default = default or "n"
+	local v = self.data[key]
+	if v == nil then
+		return default
+	end
+	return v
+end
+
+---@param key string
+---@return boolean
+function config:has(key)
+	return self.data[key] ~= nil
+end
+
 ---@param path string
----@return table<string, string>
+---@return config
 function mbl.rdcfg(path)
 	local f, err = io.open(path, "r")
 	if not f then
@@ -68,7 +99,7 @@ function mbl.rdcfg(path)
 	f:close()
 
 	mb.track(path)
-	return cfg
+	return config.new(cfg)
 end
 
 ---@class mbl.CompileOpts
