@@ -138,6 +138,13 @@ function mbl.compile(rule, srcs, opts)
 	return outs
 end
 
+---@param vars table<string, string|string[]>
+function mbl.write_vars(vars)
+	for k, v in pairs(vars) do
+		mb.var(k, table.concat(listify(v), " "))
+	end
+end
+
 ---GCC style include flag generator
 ---@param dirs string|string[]
 ---@return string
