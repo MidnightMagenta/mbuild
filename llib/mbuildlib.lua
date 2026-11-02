@@ -1,3 +1,6 @@
+local modname, filepath = ...
+mb.track(filepath)
+
 local mbl = {}
 
 local function listify(x)
