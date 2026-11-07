@@ -43,8 +43,8 @@ function mb.default(name) end
 ---@field depfile? string Path to a Makefile-style depfile
 ---@field deps? "gcc"|"msvc" Dependency format
 ---@field msvc_deps_prefix? string
----@field generator? boolean Rule regenerates the build file itself
----@field restat? boolean Re-stat outputs after running to skip downstream work
+---@field generator? string Rule regenerates the build file itself
+---@field restat? string Re-stat outputs after running to skip downstream work
 ---@field rspfile? string
 ---@field rspfile_content? string
 ---@field pool? string
