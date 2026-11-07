@@ -163,12 +163,4 @@ function mbl.bpath(p)
 	return mb.builddir() .. "/" .. p
 end
 
----@param a any[]
----@param b any[]
----@return any[]
-function mbl.merge(a, b)
-	local out = table.move(a, 1, #a, 1, {})
-	return table.move(b, 1, #b, #out + 1, out)
-end
-
 return mbl
