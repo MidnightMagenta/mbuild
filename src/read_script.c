@@ -50,8 +50,9 @@ static int l_subdir(lua_State *L) {
     const char *path;
     char       *fullp = NULL, *absp = NULL, *realp = NULL, *pathroot = NULL, *script = NULL;
     int         base, nret = 0, status;
+    int         nargs = lua_gettop(L);
 
-    if (lua_gettop(L) != 1) { return luaL_error(L, "'subdir' expected 1 argument, got %d", lua_gettop(L)); }
+    if (nargs < 1) { return luaL_error(L, "'subdir' expected 1 argument, got %d", nargs); }
     path = luaL_checkstring(L, 1);
 
     if (path[0] != '/') {
@@ -111,7 +112,9 @@ static int l_subdir(lua_State *L) {
     if (status == LUA_OK) {
         lua_pushstring(L, pathroot);
         lua_pushstring(L, absp);
-        status = lua_pcall(L, 2, LUA_MULTRET, 0);
+        luaL_checkstack(L, nargs - 1, "subdir: too many arguments");
+        for (int i = 2; i <= nargs; i++) { lua_pushvalue(L, i); }
+        status = lua_pcall(L, 2 + (nargs - 1), LUA_MULTRET, 0);
         if (status == LUA_OK) { nret = lua_gettop(L) - base; }
     }
 
