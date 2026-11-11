@@ -600,6 +600,18 @@ static int l_rel(lua_State *L) {
     return 1;
 }
 
+static int l_abs(lua_State *L) {
+    if (lua_gettop(L) != 1) { return luaL_error(L, "abs: expected 1 argument, got %d", lua_gettop(L)); }
+
+    const char *path   = luaL_checkstring(L, 1);
+    char       *target = resolve_abs(cur_project()->root, path);
+    if (!target) { return luaL_error(L, "abs: out of memory"); }
+    lua_pushstring(L, target);
+    free(target);
+
+    return 1;
+}
+
 static char *exe_dir() {
     char    buf[PATH_MAX];
     ssize_t n = readlink("/proc/self/exe", buf, sizeof(buf) - 1);
@@ -640,6 +652,7 @@ int register_lua_funcs(lua_State *L) {
             {"track", l_track},
             {"builddir", l_builddir},
             {"rel", l_rel},
+            {"abs", l_abs},
             {NULL, NULL},
     };
     luaL_newlib(L, mbuildlib);

@@ -8,8 +8,9 @@ mb = {}
 
 ---executes a script in a subdirectory
 ---@param dir string
+---@param ... any?
 ---@return table? targets  -- by convention, a script may return a table
-function mb.subdir(dir) end
+function mb.subdir(dir, ...) end
 
 ---Loads another project
 ---@param path string Sub-project directory (uses `<dir>/Mbuild`) or script file. Relative paths resolve against the calling project's root.
@@ -82,6 +83,10 @@ function mb.builddir() end
 ---@param d string
 ---@return string
 function mb.rel(d) end
+
+---@param p string
+---@return string
+function mb.abs(p) end
 
 ---get the version of mbuild running this fule (as a string)
 ---@return string
