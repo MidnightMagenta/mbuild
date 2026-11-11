@@ -12,4 +12,19 @@ function mba.merge(a, b)
 	return table.move(b, 1, #b, #out + 1, out)
 end
 
+---@param t any[]
+---@param out any[]?
+---@return any[]
+function mba.flatten(t, out)
+	out = out or {}
+	for _, v in ipairs(t) do
+		if type(v) == "table" then
+			mba.flatten(v, out)
+		else
+			out[#out + 1] = v
+		end
+	end
+	return out
+end
+
 return mba
