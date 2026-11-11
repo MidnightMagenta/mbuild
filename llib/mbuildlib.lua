@@ -103,13 +103,24 @@ function mbl.rdcfg(path)
 end
 
 ---@class mbl.CompileOpts
----@field rule string Name of a rule previously delcared with mb.rule
----@field suffix string Suffix added to the end of the output name
+---@field suffix? string Suffix added to the end of the output name
 ---@field implicit_out? string|string[]
 ---@field implicit? string|string[] Inputs that trigger rebuilds but aren't passed to the command
 ---@field order_only? string|string[]
 ---@field vars? table<string, string> Per-edge variable bindings
 ---@field pool? string
+
+local function flatten(t, out)
+	out = out or {}
+	for _, v in ipairs(t) do
+		if type(v) == "table" then
+			flatten(v, out)
+		else
+			out[#out + 1] = v
+		end
+	end
+	return out
+end
 
 ---compilation invoker for multiple sources
 ---@param rule string
@@ -135,7 +146,7 @@ function mbl.compile(rule, srcs, opts)
 		})
 	end
 
-	return outs
+	return flatten(outs)
 end
 
 ---@param vars table<string, string|string[]>
